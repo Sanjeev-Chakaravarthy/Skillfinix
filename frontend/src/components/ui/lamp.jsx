@@ -49,11 +49,11 @@ export const LampContainer = ({ children, className }) => {
               index === 0 ? "from-violet-500 via-transparent to-transparent" : "from-transparent via-transparent to-violet-500"
             } text-white [--conic-position:${pos}]`}
           >
-            <div className={`absolute w-[100%] ${index === 0 ? "left-0" : "right-0"} bg-slate-950 h-40 bottom-0 z-20 [mask-image:linear-gradient(to_top,white,transparent)]`} />
+            <div className={`absolute w-[100%] ${index === 0 ? "left-0" : "right-0"} h-40 bottom-0 z-20 [mask-image:linear-gradient(to_top,white,transparent)]`} />
             <div className={`absolute w-40 h-[100%] ${index === 0 ? "left-0" : "right-0"} bg-slate-950 bottom-0 z-20 [mask-image:linear-gradient(${index === 0 ? "to_right" : "to_left"},white,transparent)]`} />
           </motion.div>
         ))}
-        <div className="absolute top-1/2 h-48 w-full translate-y-12 scale-x-150 bg-slate-950 blur-2xl"></div>
+        <div className="absolute top-1/2 h-48 w-full translate-y-12 scale-x-150 blur-2xl"></div>
         <div className="absolute top-1/2 z-50 h-48 w-full bg-transparent opacity-10 backdrop-blur-md"></div>
         <div className="absolute inset-auto z-50 h-36 w-[1rem] -translate-y-1/2 rounded-full bg-gradient-to-r from-purple-400 to-violet-500 opacity-50 blur-3xl"></div>
         <motion.div

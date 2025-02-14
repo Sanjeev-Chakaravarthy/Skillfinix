@@ -16,7 +16,7 @@ export function VortexDemo() {
           A world where your skills are currency - trade, learn, and succeed together
         </h2>
         <div className="flex flex-col sm:flex-row items-center gap-4 mt-6">
-          <Buttons route="/vortexPreview"/>
+          <Buttons route="/typeWriter"/>
         </div>
       </Vortex>
     </div>
