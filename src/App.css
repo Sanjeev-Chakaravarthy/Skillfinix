@@ -1,6 +1,12 @@
-@import url('https://fonts.googleapis.com/css2?family=Artifika&display=swap');
-/* .artifika-regular {
-    font-family: "Artifika", serif;
-    font-weight: 400;
-    font-style: normal;
-} */
+@keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+  
+  .animate-shimmer {
+    animation: shimmer 2s infinite linear;
+  }

@@ -1,8 +1,7 @@
-"use client";
 import React from "react";
-import { SparklesCore } from "../ui/sparkles";
+import { SparklesCore } from "./sparkles";
 import { useNavigate } from "react-router-dom";
-import { Buttons } from '../ui/buttons';
+import Buttons from "./buttons";
 
 export function SparklesPreview() {
     const navigate = useNavigate();
@@ -33,8 +32,8 @@ export function SparklesPreview() {
         <div className="absolute inset-0 w-full h-full bg-black [mask-image:radial-gradient(350px_200px_at_top,transparent_20%,white)]"></div>
       </div>
       <div className="relative flex flex-col items-center space-y-4 mt-8">
-        <Buttons route="/sparklesPreview" />
-        </div>
+        <Buttons route="/vortexPreview"/>
+      </div>
     </div>
   );
 }

@@ -7,10 +7,6 @@ export const ButtonsCard = ({
   children,
   className,
   onClick,
-}: {
-  children?: React.ReactNode;
-  className?: string;
-  onClick?: () => void;
 }) => {
   return (
     <div
