@@ -1,7 +1,10 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:5005/api', // Match your backend port
+  baseURL: 'http://localhost:5005/api',
+  timeout: 600000, // 10 minutes default timeout for large uploads
+  maxContentLength: Infinity,
+  maxBodyLength: Infinity,
 });
 
 // Add a request interceptor to inject the token

@@ -1,64 +1,94 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
+import api from "@/api/axios";
+import { useAuth } from "@/context/AuthContext";
 
 const AppContext = createContext(undefined);
 
-const initialNotifications = [
-  {
-    id: "1",
-    title: "Course Update",
-    message: 'New lesson added to "React Masterclass"',
-    type: "info",
-    read: false,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "2",
-    title: "Achievement Unlocked",
-    message: 'You earned the "Quick Learner" badge!',
-    type: "success",
-    read: false,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "3",
-    title: "Barter Request",
-    message: "Maya Patel wants to exchange skills with you",
-    type: "info",
-    read: false,
-    createdAt: new Date().toISOString(),
-  },
-];
-
 export const AppProvider = ({ children }) => {
+  const { user } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [notifications, setNotifications] = useState(initialNotifications);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+
+  // Fetch real notifications from DB
+  const fetchNotifications = useCallback(async () => {
+    if (!user) return;
+    try {
+      setNotificationsLoading(true);
+      const { data } = await api.get('/notifications');
+      setNotifications(data.notifications || []);
+      setUnreadCount(data.unreadCount || 0);
+    } catch (error) {
+      console.error("Failed to fetch notifications:", error);
+    } finally {
+      setNotificationsLoading(false);
+    }
+  }, [user]);
+
+  // Fetch notifications on login
+  useEffect(() => {
+    if (user) {
+      fetchNotifications();
+    } else {
+      setNotifications([]);
+      setUnreadCount(0);
+    }
+  }, [user, fetchNotifications]);
 
   const toggleSidebar = useCallback(() => {
     setSidebarOpen((prev) => !prev);
   }, []);
 
   const addNotification = useCallback((notification) => {
+    // Optimistically add to local state
     const newNotification = {
       ...notification,
-      id: Date.now().toString(),
+      _id: Date.now().toString(),
       read: false,
       createdAt: new Date().toISOString(),
     };
     setNotifications((prev) => [newNotification, ...prev]);
+    setUnreadCount((prev) => prev + 1);
   }, []);
 
-  const markNotificationRead = useCallback((id) => {
+  const markNotificationRead = useCallback(async (id) => {
+    // Optimistic update
     setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+      prev.map((n) => (n._id === id ? { ...n, read: true } : n))
     );
+    setUnreadCount((prev) => Math.max(0, prev - 1));
+
+    // Persist to DB
+    try {
+      await api.put(`/notifications/${id}/read`);
+    } catch (error) {
+      console.error("Failed to mark notification as read:", error);
+    }
   }, []);
 
-  const clearNotifications = useCallback(() => {
+  const markAllNotificationsRead = useCallback(async () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    setUnreadCount(0);
+
+    try {
+      await api.put('/notifications/read-all');
+    } catch (error) {
+      console.error("Failed to mark all as read:", error);
+    }
+  }, []);
+
+  const clearNotifications = useCallback(async () => {
     setNotifications([]);
-  }, []);
+    setUnreadCount(0);
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+    try {
+      await api.delete('/notifications');
+    } catch (error) {
+      console.error("Failed to clear notifications:", error);
+    }
+  }, []);
 
   return (
     <AppContext.Provider
@@ -69,10 +99,13 @@ export const AppProvider = ({ children }) => {
         searchQuery,
         setSearchQuery,
         notifications,
+        notificationsLoading,
         addNotification,
         markNotificationRead,
+        markAllNotificationsRead,
         clearNotifications,
         unreadCount,
+        fetchNotifications,
       }}
     >
       {children}

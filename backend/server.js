@@ -27,31 +27,121 @@ app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:8080',
   credentials: true
 }));
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// Increase body size limits for large video uploads
+app.use(express.json({ limit: '500mb' }));
+app.use(express.urlencoded({ limit: '500mb', extended: true }));
+
+// Increase server timeout for large uploads (10 minutes)
+server.timeout = 600000;
+server.keepAliveTimeout = 600000;
+server.headersTimeout = 610000;
 
 // Store connected users map
-const connectedUsers = new Map(); // Map userId -> socketId
+const connectedUsers = new Map();
 
 // Make io & connectedUsers accessible to routes
 app.set('io', io);
 app.set('connectedUsers', connectedUsers);
 
-// Static uploads (if used)
+// Static uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
-app.use('/api/courses', require('./routes/courseRoutes')); // Now exists!
+app.use('/api/courses', require('./routes/courseRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/chat', require('./routes/chatRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
+app.use('/api/enrollments', require('./routes/enrollmentRoutes'));
+app.use('/api/interactions', require('./routes/interactionRoutes'));
+
+// ==========================================================================
+// GLOBAL SEARCH ENDPOINT — searches across courses, users, and skills
+// ==========================================================================
+const User = require('./models/User');
+const Course = require('./models/Course');
+const { protect } = require('./middleware/authMiddleware');
+
+app.get('/api/search', protect, async (req, res) => {
+  try {
+    const { q, type } = req.query;
+    if (!q || q.trim().length < 2) {
+      return res.status(200).json({ courses: [], users: [], trending: [] });
+    }
+
+    const regex = new RegExp(q, 'i');
+    let courses = [];
+    let users = [];
+
+    if (!type || type === 'all' || type === 'courses') {
+      courses = await Course.find({
+        $or: [
+          { title: regex },
+          { description: regex },
+          { category: regex },
+          { tags: regex },
+          { instructor: regex }
+        ],
+        visibility: 'public'
+      }).sort({ views: -1 }).limit(10);
+    }
+
+    if (!type || type === 'all' || type === 'users') {
+      users = await User.find({
+        _id: { $ne: req.user.id },
+        $or: [
+          { name: regex },
+          { skills: regex },
+          { interests: regex }
+        ]
+      }).select('-password').limit(10);
+    }
+
+    // Trending: top categories matching query
+    const trending = await Course.aggregate([
+      { $match: { category: regex, visibility: 'public' } },
+      { $group: { _id: '$category', count: { $sum: 1 }, avgViews: { $avg: '$views' } } },
+      { $sort: { avgViews: -1 } },
+      { $limit: 5 }
+    ]);
+
+    res.status(200).json({ courses, users, trending });
+  } catch (error) {
+    console.error('Search error:', error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
+
+// ==========================================================================
+// TRENDING ENDPOINT — courses sorted by views in last 7 days
+// ==========================================================================
+app.get('/api/trending', async (req, res) => {
+  try {
+    const courses = await Course.find({ visibility: 'public' })
+      .sort({ views: -1, enrolledCount: -1 })
+      .limit(20);
+    res.status(200).json(courses);
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
 
 // Setup Socket Handler
 setupSocket(io, connectedUsers);
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('Server error:', err.message);
+  
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(413).json({ message: 'File too large. Maximum allowed size is 500MB.' });
+  }
+  
+  if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+    return res.status(400).json({ message: 'Unexpected file field.' });
+  }
+  
   res.status(500).json({ message: 'Server Error', error: err.message });
 });
 
@@ -59,4 +149,7 @@ const PORT = process.env.PORT || 5005;
 server.listen(PORT, () => {
   console.log(`\n🚀 Server running on port ${PORT}`);
   console.log(`🔌 Socket.io ready for real-time chat`);
+  console.log(`📁 Max upload size: 500MB`);
+  console.log(`🔍 Global search: /api/search?q=keyword`);
+  console.log(`📊 Trending: /api/trending`);
 });

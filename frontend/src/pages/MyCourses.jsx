@@ -12,13 +12,9 @@ const MyCourses = () => {
   useEffect(() => {
     const fetchMyCourses = async () => {
       try {
-        // Since we don't have a specific user-progress endpoint yet, 
-        // let's fetch some courses and mock their progress.
-        const { data } = await api.get('/courses');
-        setCourses((data || []).map(c => ({
-          ...c,
-          progress: Math.floor(Math.random() * 80) + 10
-        })));
+        // Fetch REAL enrollment data with progress from DB
+        const { data } = await api.get('/enrollments');
+        setCourses(data || []);
       } catch (error) {
         console.error("Error fetching my courses:", error);
       } finally {
@@ -36,6 +32,9 @@ const MyCourses = () => {
     );
   }
 
+  const inProgress = courses.filter(c => !c.completed && c.progress < 100);
+  const completed = courses.filter(c => c.completed || c.progress >= 100);
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="mb-8">
@@ -48,11 +47,11 @@ const MyCourses = () => {
         <section>
           <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
             <div className="w-1.5 h-6 bg-primary rounded-full" />
-            In Progress
+            In Progress ({inProgress.length})
           </h2>
-          {courses.length > 0 ? (
+          {inProgress.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {courses.filter(c => c.progress < 100).map((course, idx) => (
+              {inProgress.map((course, idx) => (
                 <motion.div
                   key={course._id}
                   initial={{ opacity: 0, y: 20 }}
@@ -65,7 +64,7 @@ const MyCourses = () => {
             </div>
           ) : (
             <div className="text-center py-12 bg-muted/30 rounded-2xl border border-dashed border-border">
-              <p className="text-muted-foreground">You haven't started any courses yet.</p>
+              <p className="text-muted-foreground">You haven't started any courses yet. Start watching to track progress!</p>
             </div>
           )}
         </section>
@@ -74,11 +73,11 @@ const MyCourses = () => {
         <section>
           <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
             <div className="w-1.5 h-6 bg-green-500 rounded-full" />
-            Completed
+            Completed ({completed.length})
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {courses.filter(c => c.progress >= 100).length > 0 ? (
-              courses.filter(c => c.progress >= 100).map((course, idx) => (
+            {completed.length > 0 ? (
+              completed.map((course, idx) => (
                 <motion.div
                   key={course._id}
                   initial={{ opacity: 0, y: 20 }}

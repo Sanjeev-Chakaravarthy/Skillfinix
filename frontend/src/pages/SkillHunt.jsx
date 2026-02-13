@@ -5,33 +5,45 @@ import { CustomButton } from "@/components/CustomButton";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import api from "@/api/axios";
+import { useSearchParams } from "react-router-dom";
 
-// Static options for Level and Sort (These usually stay constant)
+// Static options for Level and Sort
 const levels = ["All Levels", "Beginner", "Intermediate", "Advanced"];
 const sortOptions = ["Newest", "Oldest", "Most Popular", "Highest Rated"];
 
 const SkillHunt = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  
   // State for Data
   const [courses, setCourses] = useState([]);
-  const [categories, setCategories] = useState([]); // Dynamic Categories
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // State for Filters
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [selectedLevel, setSelectedLevel] = useState("All Levels");
-  const [sortBy, setSortBy] = useState("Newest");
-  
+  // Initialize State from URL or Defaults
+  const [searchQuery, setSearchQuery] = useState(searchParams.get("keyword") || "");
+  const [selectedCategory, setSelectedCategory] = useState(searchParams.get("category") || "All");
+  const [selectedLevel, setSelectedLevel] = useState(searchParams.get("level") || "All Levels");
+  const [sortBy, setSortBy] = useState(searchParams.get("sort") || "Newest");
+
   // UI State
   const [viewMode, setViewMode] = useState("grid");
   const [showFilters, setShowFilters] = useState(false);
+
+  // Sync URL with State (Optional but good for UX)
+  useEffect(() => {
+    const params = {};
+    if (searchQuery) params.keyword = searchQuery;
+    if (selectedCategory !== "All") params.category = selectedCategory;
+    if (selectedLevel !== "All Levels") params.level = selectedLevel;
+    if (sortBy !== "Newest") params.sort = sortBy;
+    setSearchParams(params, { replace: true });
+  }, [searchQuery, selectedCategory, selectedLevel, sortBy]);
 
   // 1. Fetch Dynamic Categories on Load
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         const { data } = await api.get('/courses/categories');
-        // Filter out any null/empty strings just in case
         setCategories(data.filter(Boolean));
       } catch (error) {
         console.error("Failed to fetch categories", error);
@@ -40,31 +52,26 @@ const SkillHunt = () => {
     fetchCategories();
   }, []);
 
-  // 2. Fetch Courses (with Filters)
-  const fetchCourses = async () => {
-    setLoading(true);
-    try {
-      // Build Query Params
-      const params = new URLSearchParams();
-      
-      if (searchQuery) params.append("keyword", searchQuery);
-      if (selectedCategory !== "All") params.append("category", selectedCategory);
-      if (selectedLevel !== "All Levels") params.append("level", selectedLevel);
-      params.append("sort", sortBy);
-
-      // Call API
-      const { data } = await api.get(`/courses?${params.toString()}`);
-      setCourses(data);
-    } catch (error) {
-      console.error("Failed to fetch courses:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Trigger fetch when any filter changes
+  // 2. Fetch Courses (Debounced)
   useEffect(() => {
-    // Debounce search to prevent too many API calls while typing
+    const fetchCourses = async () => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (searchQuery) params.append("keyword", searchQuery);
+        if (selectedCategory !== "All") params.append("category", selectedCategory);
+        if (selectedLevel !== "All Levels") params.append("level", selectedLevel);
+        params.append("sort", sortBy);
+
+        const { data } = await api.get(`/courses?${params.toString()}`);
+        setCourses(data);
+      } catch (error) {
+        console.error("Failed to fetch courses:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     const timer = setTimeout(() => {
       fetchCourses();
     }, 500);
@@ -74,7 +81,7 @@ const SkillHunt = () => {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    fetchCourses();
+    // Fetch is triggered by useEffect on searchQuery change
   };
 
   return (
@@ -179,26 +186,20 @@ const SkillHunt = () => {
                     >
                       All
                     </button>
-                    {categories.length > 0 ? (
-                      categories.map((cat) => (
-                        <button
-                          key={cat}
-                          onClick={() => setSelectedCategory(cat)}
-                          className={cn(
-                            "px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
-                            selectedCategory === cat
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-muted text-muted-foreground hover:bg-accent"
-                          )}
-                        >
-                          {cat}
-                        </button>
-                      ))
-                    ) : (
-                      <span className="text-sm italic text-muted-foreground">
-                        No categories found. Upload a course to start!
-                      </span>
-                    )}
+                    {categories.map((cat) => (
+                      <button
+                        key={cat}
+                        onClick={() => setSelectedCategory(cat)}
+                        className={cn(
+                          "px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
+                          selectedCategory === cat
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted text-muted-foreground hover:bg-accent"
+                        )}
+                      >
+                        {cat}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
