@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowRight,
   Sparkles,
@@ -20,6 +20,7 @@ import api from "@/api/axios";
 
 const Home = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [recommendedCourses, setRecommendedCourses] = useState([]);
   const [categories, setCategories] = useState([]);
   const [topBarterUsers, setTopBarterUsers] = useState([]);
@@ -47,14 +48,13 @@ const Home = () => {
         const { data: barters } = await api.get('/users/barters');
         setTopBarterUsers((barters || []).slice(0, 3));
 
-        // Mock in-progress courses (since backend doesn't have a specific endpoint yet)
-        // We'll take the first 2 recommended courses and give them fake progress for UI demo
-        if (recommended && recommended.length > 0) {
-          setCoursesInProgress(recommended.slice(0, 2).map(c => ({
-            ...c,
-            id: c._id,
-            progress: Math.floor(Math.random() * 60) + 20
-          })));
+        // Fetch REAL in-progress courses from enrollment data
+        try {
+          const { data: enrolled } = await api.get('/enrollments/recent?limit=3');
+          setCoursesInProgress(enrolled || []);
+        } catch (enrollErr) {
+          console.log("No enrollment data yet:", enrollErr.message);
+          setCoursesInProgress([]);
         }
 
       } catch (error) {
@@ -163,7 +163,7 @@ const Home = () => {
         <div className="absolute -right-10 -bottom-20 w-60 h-60 rounded-full bg-primary-light/20 blur-3xl opacity-30" />
       </motion.div>
 
-      {/* Continue Learning */}
+      {/* Continue Learning — REAL PROGRESS from enrollment DB */}
       {coursesInProgress.length > 0 && (
         <section className="mb-10">
           <div className="flex items-center justify-between mb-5">
@@ -203,9 +203,7 @@ const Home = () => {
             {categories.slice(0, 8).map((category) => (
               <Link
                 key={category}
-                to={`/skill-hunt?category=${encodeURIComponent(
-                  category
-                )}`}
+                to={`/skill-hunt?category=${encodeURIComponent(category)}`}
                 className="flex-shrink-0 px-4 py-2 rounded-xl bg-card border border-border hover:border-primary/50 hover:bg-accent transition-all text-sm font-medium text-foreground hover:shadow-sm"
               >
                 {category}
@@ -272,8 +270,8 @@ const Home = () => {
             >
               <SkillBarterCard 
                 user={barterUser} 
-                onConnect={(id) => console.log('Connect to:', id)}
-                onMessage={() => console.log('Message user')}
+                onConnect={() => navigate('/barters')}
+                onMessage={() => navigate('/skill-chat', { state: { selectedUserId: barterUser._id, selectedUserData: barterUser } })}
               />
             </motion.div>
           ))}

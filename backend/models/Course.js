@@ -1,22 +1,23 @@
 const mongoose = require('mongoose');
 
 const courseSchema = mongoose.Schema({
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Link to creator (optional for backward compatibility)
   title: { type: String, required: true },
   instructor: { type: String, required: true },
   instructorAvatar: { type: String },
   thumbnail: { type: String, required: true },
-  videoUrl: { type: String, required: true }, // ✅ ADDED: Video URL from Cloudinary
+  videoUrl: { type: String, required: true },
   description: { type: String },
   rating: { type: Number, default: 0 },
   reviewCount: { type: Number, default: 0 },
-  views: { type: Number, default: 0 }, // ✅ ADDED: View count
-  duration: { type: String },
+  views: { type: Number, default: 0 },
+  duration: { type: String }, // Format: "MM:SS"
   category: { type: String },
   level: { type: String, default: 'Beginner' },
   tags: [{ type: String }],
   enrolledCount: { type: Number, default: 0 },
   price: { type: Number, default: 0 },
-  visibility: { type: String, enum: ['public', 'private'], default: 'public' }, // ✅ ADDED: Visibility
+  visibility: { type: String, enum: ['public', 'private'], default: 'public' },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Course', courseSchema);

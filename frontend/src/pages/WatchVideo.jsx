@@ -1,22 +1,30 @@
-import React, { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
-import { Play, ThumbsUp, Share2, MoreHorizontal, User, Calendar, Eye } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { Play, ThumbsUp, Heart, Clock, Share2, MoreHorizontal, User, Calendar, Eye } from "lucide-react";
 import { CustomButton } from "@/components/CustomButton";
 import api from "@/api/axios";
 import { motion } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 import CourseCard from "@/components/CourseCard";
 import RatingStars from "@/components/RatingStars";
+import { useToast } from "@/components/ui/use-toast";
 
 const WatchVideo = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [recommended, setRecommended] = useState([]);
   const [error, setError] = useState(null);
+  const { user } = useAuth();
+  const videoRef = useRef(null);
+  const progressIntervalRef = useRef(null);
 
-
-  const { user } = useAuth(); // Import useAuth at top
+  // Interaction states (from DB)
+  const [liked, setLiked] = useState(false);
+  const [favorited, setFavorited] = useState(false);
+  const [watchLater, setWatchLater] = useState(false);
 
   useEffect(() => {
     const fetchCourseData = async () => {
@@ -27,19 +35,36 @@ const WatchVideo = () => {
         const { data: courseData } = await api.get(`/courses/${id}`);
         setCourse(courseData);
 
-        // Fetch recommended courses (simulated relative videos)
+        // Fetch recommended courses
         const { data: recData } = await api.get('/courses/recommended');
         setRecommended(recData.filter(c => c._id !== id));
 
-        // Save to Watch History (Local Storage)
-        if (user && courseData) {
-            const historyKey = `watchHistory_${user._id}`;
-            const history = JSON.parse(localStorage.getItem(historyKey) || "[]");
-            
-            // Remove if exists to re-add at top
-            const newHistory = [courseData, ...history.filter(h => h._id !== courseData._id)].slice(0, 50);
-            
-            localStorage.setItem(historyKey, JSON.stringify(newHistory));
+        // Record history in DB
+        try {
+          await api.post('/interactions/history', { courseId: id });
+        } catch (histErr) {
+          console.log("History recording skipped:", histErr.message);
+        }
+
+        // Auto-enroll when watching
+        try {
+          await api.post('/enrollments', { courseId: id });
+        } catch (enrollErr) {
+          // Already enrolled — that's fine
+        }
+
+        // Check interaction states
+        try {
+          const [likeRes, favRes, wlRes] = await Promise.all([
+            api.get(`/interactions/check/${id}/like`),
+            api.get(`/interactions/check/${id}/favorite`),
+            api.get(`/interactions/check/${id}/watch_later`),
+          ]);
+          setLiked(likeRes.data.active);
+          setFavorited(favRes.data.active);
+          setWatchLater(wlRes.data.active);
+        } catch (checkErr) {
+          // Silently handle check errors
         }
 
       } catch (err) {
@@ -51,9 +76,76 @@ const WatchVideo = () => {
     };
 
     fetchCourseData();
-    // Scroll to top when id changes
     window.scrollTo(0, 0);
+
+    return () => {
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+    };
   }, [id, user]);
+
+  // Track video progress and update enrollment
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !course) return;
+
+    const handleTimeUpdate = () => {
+      const duration = video.duration;
+      const currentTime = video.currentTime;
+      if (duration > 0) {
+        const progress = Math.min(Math.round((currentTime / duration) * 100), 100);
+        
+        // Debounce: only update every 30 seconds
+        if (!progressIntervalRef.current) {
+          progressIntervalRef.current = setInterval(async () => {
+            try {
+              const vid = videoRef.current;
+              if (!vid) return;
+              const p = Math.min(Math.round((vid.currentTime / vid.duration) * 100), 100);
+              await api.put(`/enrollments/${id}/progress`, { 
+                progress: p,
+                watchedDuration: 30 // 30 seconds of watch time
+              });
+            } catch (err) {
+              // Silently handle progress update errors
+            }
+          }, 30000); // Every 30 seconds
+        }
+      }
+    };
+
+    video.addEventListener('timeupdate', handleTimeUpdate);
+
+    // Update progress on video end
+    const handleEnded = async () => {
+      try {
+        await api.put(`/enrollments/${id}/progress`, { progress: 100 });
+        toast({ title: "Course Completed! 🎉", description: "Great job finishing this course!" });
+      } catch (err) {
+        console.log("Final progress update error:", err);
+      }
+    };
+    video.addEventListener('ended', handleEnded);
+
+    return () => {
+      video.removeEventListener('timeupdate', handleTimeUpdate);
+      video.removeEventListener('ended', handleEnded);
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
+    };
+  }, [course, id, toast]);
+
+  // Interaction toggle handlers
+  const handleToggle = async (type, setter) => {
+    try {
+      const { data } = await api.post('/interactions', { courseId: id, type });
+      setter(data.active);
+      toast({ title: data.message });
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to update", variant: "destructive" });
+    }
+  };
 
   if (loading) {
     return (
@@ -83,9 +175,10 @@ const WatchVideo = () => {
           {/* Main Content - Left Column */}
           <div className="lg:col-span-2 space-y-6">
             
-            {/* Video Player Wrapper */}
+            {/* Video Player */}
             <div className="relative w-full overflow-hidden bg-black rounded-xl aspect-video shadow-lg group">
               <video 
+                ref={videoRef}
                 src={course.videoUrl} 
                 poster={course.thumbnail}
                 controls 
@@ -115,15 +208,30 @@ const WatchVideo = () => {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <CustomButton variant="outline" className="gap-2 rounded-full">
-                    <ThumbsUp className="w-4 h-4" /> Like
+                  <CustomButton 
+                    variant={liked ? "default" : "outline"} 
+                    className="gap-2 rounded-full"
+                    onClick={() => handleToggle('like', setLiked)}
+                  >
+                    <ThumbsUp className={`w-4 h-4 ${liked ? 'fill-current' : ''}`} /> 
+                    {liked ? 'Liked' : 'Like'}
                   </CustomButton>
-                  <CustomButton variant="outline" className="gap-2 rounded-full">
-                    <Share2 className="w-4 h-4" /> Share
+                  <CustomButton 
+                    variant={favorited ? "default" : "outline"} 
+                    className="gap-2 rounded-full"
+                    onClick={() => handleToggle('favorite', setFavorited)}
+                  >
+                    <Heart className={`w-4 h-4 ${favorited ? 'fill-current' : ''}`} /> 
+                    {favorited ? 'Saved' : 'Save'}
                   </CustomButton>
-                  <button className="p-2 border rounded-full hover:bg-muted">
-                    <MoreHorizontal className="w-5 h-5 text-muted-foreground" />
-                  </button>
+                  <CustomButton 
+                    variant={watchLater ? "default" : "outline"} 
+                    className="gap-2 rounded-full"
+                    onClick={() => handleToggle('watch_later', setWatchLater)}
+                  >
+                    <Clock className={`w-4 h-4 ${watchLater ? 'fill-current' : ''}`} /> 
+                    {watchLater ? 'Added' : 'Watch Later'}
+                  </CustomButton>
                 </div>
               </div>
 
@@ -149,7 +257,7 @@ const WatchVideo = () => {
                 <CustomButton variant="default" size="sm">Subscribe</CustomButton>
               </div>
 
-              {/* Comments Section (Placeholder for now) */}
+              {/* Comments Placeholder */}
               <div className="pt-6">
                 <h3 className="text-lg font-bold mb-4">Comments</h3>
                 <div className="p-8 text-center bg-muted/30 rounded-xl border border-dashed border-border">
