@@ -19,7 +19,7 @@ const SkillBarterCard = ({ user, className, onConnect, onMessage }) => {
     <motion.div
       whileHover={{ y: -4 }}
       className={cn(
-        "group bg-card rounded-2xl shadow-card hover:shadow-card-hover transition-all duration-300 p-5 border border-border",
+        "group bg-card rounded-2xl shadow-card hover:shadow-card-hover transition-all duration-300 p-5 border border-border h-full flex flex-col",
         className
       )}
     >
@@ -63,7 +63,7 @@ const SkillBarterCard = ({ user, className, onConnect, onMessage }) => {
       </p>
 
       {/* Skills Section */}
-      <div className="mt-4 space-y-3">
+      <div className="my-4 space-y-3">
         {/* Can Teach */}
         <div>
           <div className="mb-2 text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
@@ -122,7 +122,7 @@ const SkillBarterCard = ({ user, className, onConnect, onMessage }) => {
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-3 pt-4 mt-4 border-t border-border">
+      <div className="flex items-center gap-3 pt-4 mt-auto border-t border-border">
         <button 
           onClick={onMessage}
           className="p-2 transition-colors border rounded-lg border-border hover:bg-muted text-muted-foreground hover:text-foreground hover:border-primary/50 group/btn"

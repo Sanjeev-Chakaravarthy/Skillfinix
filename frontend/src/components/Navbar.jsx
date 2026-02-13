@@ -230,8 +230,8 @@ const Navbar = () => {
                     ) : (
                       notifications.map((notif) => (
                         <button
-                          key={notif.id}
-                          onClick={() => markNotificationRead(notif.id)}
+                          key={notif._id}
+                          onClick={() => markNotificationRead(notif._id)}
                           className={cn(
                             "w-full px-4 py-3 hover:bg-muted transition-colors text-left border-l-2",
                             !notif.read ? "bg-accent/30 border-primary" : "border-transparent"
