@@ -5,12 +5,18 @@ import RatingStars from "./RatingStars";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
+const avatarFallback = (name) =>
+  `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'I')}&background=6366f1&color=fff&size=32`;
+
+const formatCount = (n) => {
+  if (!n || n === 0) return null;
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+  return String(n);
+};
+
 const CourseCard = ({ course, variant = "default", className }) => {
-  const handleEnroll = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    console.log("Enroll clicked for course:", course.id);
-  };
+  const tags = Array.isArray(course.tags) ? course.tags : [];
+  const enrolledLabel = formatCount(course.enrolledCount ?? course.enrolled);
 
   if (variant === "compact") {
     return (
@@ -23,15 +29,19 @@ const CourseCard = ({ course, variant = "default", className }) => {
             className
           )}
         >
-          <div className="relative flex-shrink-0 w-24 h-16 overflow-hidden rounded-lg">
-            <img
-              src={course.thumbnail}
-              alt={course.title}
-              className="object-cover w-full h-full"
-            />
-            <div className="absolute inset-0 flex items-center justify-center transition-opacity opacity-0 bg-foreground/10 hover:opacity-100">
-              <Play className="w-6 h-6 text-card fill-card" />
-            </div>
+          <div className="relative flex-shrink-0 w-24 h-16 overflow-hidden rounded-lg bg-muted">
+            {course.thumbnail ? (
+              <img
+                src={course.thumbnail}
+                alt={course.title}
+                className="object-cover w-full h-full"
+                onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; }}
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <BookOpen className="w-6 h-6 text-muted-foreground" />
+              </div>
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <h4 className="text-sm font-medium text-foreground line-clamp-1">
@@ -41,14 +51,10 @@ const CourseCard = ({ course, variant = "default", className }) => {
               {course.instructor}
             </p>
             <div className="flex items-center gap-2 mt-1">
-              <RatingStars
-                rating={course.rating}
-                size="sm"
-                showValue={false}
-              />
-              <span className="text-xs text-muted-foreground">
-                {course.rating}
-              </span>
+              <RatingStars rating={course.rating} size="sm" showValue={false} />
+              {course.rating > 0 && (
+                <span className="text-xs text-muted-foreground">{Number(course.rating).toFixed(1)}</span>
+              )}
             </div>
           </div>
         </motion.div>
@@ -67,76 +73,79 @@ const CourseCard = ({ course, variant = "default", className }) => {
           )}
         >
           {/* Thumbnail */}
-          <div className="relative overflow-hidden aspect-video">
-            <img
-              src={course.thumbnail}
-              alt={course.title}
-              className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
-            />
+          <div className="relative overflow-hidden aspect-video bg-muted">
+            {course.thumbnail ? (
+              <img
+                src={course.thumbnail}
+                alt={course.title}
+                className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
+                onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; }}
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <Play className="w-10 h-10 text-muted-foreground/30" />
+              </div>
+            )}
             <div className="absolute inset-0 transition-opacity opacity-0 bg-gradient-to-t from-foreground/60 to-transparent group-hover:opacity-100" />
 
-            {/* Play button overlay */}
+            {/* Play overlay */}
             <div className="absolute inset-0 flex items-center justify-center transition-opacity opacity-0 group-hover:opacity-100">
               <div className="flex items-center justify-center rounded-full shadow-lg w-14 h-14 bg-card/90 backdrop-blur-sm">
                 <Play className="w-6 h-6 ml-1 text-primary fill-primary" />
               </div>
             </div>
 
-            {/* Duration badge */}
-            <div className="absolute px-2 py-1 rounded-md bottom-3 right-3 bg-foreground/80 backdrop-blur-sm">
-              <span className="text-xs font-medium text-card">
-                {course.duration}
-              </span>
-            </div>
+            {/* Duration badge — only if real duration exists */}
+            {course.duration && (
+              <div className="absolute px-2 py-1 rounded-md bottom-3 right-3 bg-foreground/80 backdrop-blur-sm">
+                <span className="text-xs font-medium text-card">{course.duration}</span>
+              </div>
+            )}
 
             {/* Level badge */}
-            <div className="absolute px-2 py-1 rounded-md top-3 left-3 bg-primary/90 backdrop-blur-sm">
-              <span className="text-xs font-medium text-primary-foreground">
-                {course.level}
-              </span>
-            </div>
+            {course.level && (
+              <div className="absolute px-2 py-1 rounded-md top-3 left-3 bg-primary/90 backdrop-blur-sm">
+                <span className="text-xs font-medium text-primary-foreground">{course.level}</span>
+              </div>
+            )}
           </div>
 
           {/* Content */}
           <div className="p-5">
-            <div className="flex flex-wrap gap-1.5 mb-3">
-              {course.tags.slice(0, 3).map((tag) => (
-                <span
-                  key={tag}
-                  className="px-2 py-0.5 text-xs font-medium bg-accent text-accent-foreground rounded-md"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {tags.slice(0, 3).map((tag) => (
+                  <span key={tag} className="px-2 py-0.5 text-xs font-medium bg-accent text-accent-foreground rounded-md">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
 
             <h3 className="text-lg font-semibold transition-colors font-heading text-foreground line-clamp-2 group-hover:text-primary">
               {course.title}
             </h3>
 
-            <div className="flex items-center gap-2 mt-3">
-              <img
-                src={course.instructorAvatar}
-                alt={course.instructor}
-                className="object-cover w-6 h-6 rounded-full"
-              />
-              <span className="text-sm text-muted-foreground">
-                {course.instructor}
-              </span>
-            </div>
+            {course.instructor && (
+              <div className="flex items-center gap-2 mt-3">
+                <img
+                  src={course.instructorAvatar || avatarFallback(course.instructor)}
+                  alt={course.instructor}
+                  className="object-cover w-6 h-6 rounded-full"
+                  onError={(e) => { e.target.onerror = null; e.target.src = avatarFallback(course.instructor); }}
+                />
+                <span className="text-sm text-muted-foreground">{course.instructor}</span>
+              </div>
+            )}
 
             <div className="flex items-center justify-between pt-4 mt-4 border-t border-border">
-              <RatingStars
-                rating={course.rating}
-                reviewCount={course.reviewCount}
-                size="sm"
-              />
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <Users className="w-4 h-4" />
-                <span className="text-xs">
-                  {(course.enrolled / 1000).toFixed(1)}k
-                </span>
-              </div>
+              <RatingStars rating={course.rating} reviewCount={course.reviewCount} size="sm" />
+              {enrolledLabel && (
+                <div className="flex items-center gap-1 text-muted-foreground">
+                  <Users className="w-4 h-4" />
+                  <span className="text-xs">{enrolledLabel}</span>
+                </div>
+              )}
             </div>
           </div>
         </motion.div>
@@ -155,17 +164,25 @@ const CourseCard = ({ course, variant = "default", className }) => {
         )}
       >
         {/* Thumbnail */}
-        <div className="relative overflow-hidden aspect-video">
-          <img
-            src={course.thumbnail}
-            alt={course.title}
-            className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
-          />
-          <div className="absolute px-2 py-1 rounded-md bottom-2 right-2 bg-foreground/80 backdrop-blur-sm">
-            <span className="text-xs font-medium text-card">
-              {course.duration}
-            </span>
-          </div>
+        <div className="relative overflow-hidden aspect-video bg-muted">
+          {course.thumbnail ? (
+            <img
+              src={course.thumbnail}
+              alt={course.title}
+              className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
+              onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; }}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <Play className="w-8 h-8 text-muted-foreground/30" />
+            </div>
+          )}
+          {/* Duration badge — only if real duration stored in DB */}
+          {course.duration && (
+            <div className="absolute px-2 py-1 rounded-md bottom-2 right-2 bg-foreground/80 backdrop-blur-sm">
+              <span className="text-xs font-medium text-card">{course.duration}</span>
+            </div>
+          )}
         </div>
 
         {/* Content */}
@@ -173,28 +190,23 @@ const CourseCard = ({ course, variant = "default", className }) => {
           <h3 className="font-medium transition-colors text-foreground line-clamp-2 group-hover:text-primary">
             {course.title}
           </h3>
-
-          <p className="mt-1 text-sm text-muted-foreground">
-            {course.instructor}
-          </p>
-
+          <p className="mt-1 text-sm text-muted-foreground">{course.instructor}</p>
           <div className="mt-2">
-            <RatingStars
-              rating={course.rating}
-              reviewCount={course.reviewCount}
-              size="sm"
-            />
+            <RatingStars rating={course.rating} reviewCount={course.reviewCount} size="sm" />
           </div>
-
           <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
-            <div className="flex items-center gap-1">
-              <Clock className="h-3.5 w-3.5" />
-              {course.duration}
-            </div>
-            <div className="flex items-center gap-1">
-              <BookOpen className="h-3.5 w-3.5" />
-              {course.level}
-            </div>
+            {course.duration && (
+              <div className="flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5" />
+                {course.duration}
+              </div>
+            )}
+            {course.level && (
+              <div className="flex items-center gap-1">
+                <BookOpen className="h-3.5 w-3.5" />
+                {course.level}
+              </div>
+            )}
           </div>
         </div>
       </motion.div>
@@ -202,4 +214,4 @@ const CourseCard = ({ course, variant = "default", className }) => {
   );
 };
 
-export default CourseCard;
+export default React.memo(CourseCard);

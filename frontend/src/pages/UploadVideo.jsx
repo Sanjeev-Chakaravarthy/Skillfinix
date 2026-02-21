@@ -24,6 +24,7 @@ const UploadVideo = () => {
   const thumbnailInputRef = useRef(null);
 
   // Form Data
+  const [videoDuration, setVideoDuration] = useState(""); // real MM:SS from file
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -56,10 +57,26 @@ const UploadVideo = () => {
       return;
     }
     setSelectedFile(file);
-    setVideoPreviewUrl(URL.createObjectURL(file));
+    const objectUrl = URL.createObjectURL(file);
+    setVideoPreviewUrl(objectUrl);
     setUploadStatus("idle");
     setErrorMessage("");
-    setStep(1); // Go to Details
+
+    // Extract real duration from video metadata
+    const tempVideo = document.createElement("video");
+    tempVideo.preload = "metadata";
+    tempVideo.src = objectUrl;
+    tempVideo.onloadedmetadata = () => {
+      const totalSecs = Math.floor(tempVideo.duration);
+      if (!isNaN(totalSecs) && totalSecs > 0) {
+        const mins = Math.floor(totalSecs / 60);
+        const secs = totalSecs % 60;
+        setVideoDuration(`${mins}:${String(secs).padStart(2, "0")}`);
+      }
+      URL.revokeObjectURL(tempVideo.src);
+    };
+
+    setStep(1);
   };
 
   const handleThumbnailSelect = (e) => {
@@ -80,7 +97,7 @@ const UploadVideo = () => {
     
     const data = new FormData();
     data.append("video", selectedFile);
-    
+
     if (thumbnailMode === "custom" && customThumbnail) {
       data.append("thumbnail", customThumbnail);
     }
@@ -91,10 +108,10 @@ const UploadVideo = () => {
     data.append("level", formData.level);
     data.append("tags", formData.tags);
     data.append("visibility", formData.visibility);
+    // Send real duration extracted from video metadata
+    if (videoDuration) data.append("duration", videoDuration);
 
     try {
-      console.log("📤 Starting upload...");
-      console.log("Video file:", selectedFile.name, selectedFile.size, "bytes");
       
       const response = await api.post("/courses", data, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -109,19 +126,14 @@ const UploadVideo = () => {
 
       setUploadProgress(100);
       setUploadStatus("success");
-      console.log("✅ Upload successful!", response.data);
     } catch (error) {
-      console.error("❌ Upload failed:", error);
-      
       let errorMsg = "Upload failed. Please try again.";
       
       if (error.response) {
-        console.error("Server error:", error.response.status, error.response.data);
         errorMsg = error.response.data?.message || `Server error (${error.response.status})`;
       } else if (error.code === "ECONNABORTED") {
         errorMsg = "Upload timed out. The video may be too large. Try a smaller file.";
       } else if (error.request) {
-        console.error("No response from server");
         errorMsg = "Cannot connect to server. Please check if the backend is running.";
       } else {
         errorMsg = error.message || errorMsg;
