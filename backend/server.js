@@ -59,6 +59,7 @@ app.use('/api/live-sessions', require('./routes/liveSessionRoutes'));
 app.use('/api/support', require('./routes/supportRoutes'));
 app.use('/api/swaps', require('./routes/swapRoutes'));
 app.use('/api/categories', require('./routes/categoryRoutes'));
+app.use('/api/discussions', require('./routes/discussionRoutes'));
 
 // ==========================================================================
 // GLOBAL SEARCH ENDPOINT — searches across courses, users, and skills
