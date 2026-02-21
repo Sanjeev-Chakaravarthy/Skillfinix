@@ -1,65 +1,72 @@
-// src/components/Navbar.jsx
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Bell, Plus, Menu, User, Settings, LogOut, ChevronDown,
-  Video, Upload, Radio, FileEdit, ListPlus, BookOpen, GraduationCap
+  Video, Upload, Radio, ListPlus, BookOpen, GraduationCap,
+  Check, CheckCheck, Trash2, ArrowLeftRight, Trophy, Zap, Info,
+  AlertCircle, Star, X
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useApp } from "@/context/AppContext";
 import SearchBar from "./SearchBar";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSocket } from "@/context/SocketContext";
+
+const getDefaultAvatar = (name) =>
+  `https://ui-avatars.com/api/?name=${encodeURIComponent(name || "User")}&background=6366f1&color=fff&size=200&bold=true`;
+
+const getAvatarUrl = (avatarPath, name) => {
+  if (!avatarPath) return getDefaultAvatar(name);
+  if (avatarPath.startsWith("http")) return avatarPath;
+  return getDefaultAvatar(name);
+};
+
+// Notification type → icon + color
+const notifMeta = (type) => {
+  switch (type) {
+    case "success":
+    case "course":      return { icon: BookOpen,       color: "text-green-500",  bg: "bg-green-500/10" };
+    case "barter":      return { icon: ArrowLeftRight, color: "text-blue-500",   bg: "bg-blue-500/10" };
+    case "achievement": return { icon: Trophy,          color: "text-yellow-500", bg: "bg-yellow-500/10" };
+    case "warning":     return { icon: AlertCircle,     color: "text-orange-500", bg: "bg-orange-500/10" };
+    case "error":       return { icon: AlertCircle,     color: "text-red-500",    bg: "bg-red-500/10" };
+    case "info":
+    default:            return { icon: Info,            color: "text-primary",    bg: "bg-primary/10" };
+  }
+};
+
+const timeAgo = (dateStr) => {
+  if (!dateStr) return "";
+  const diff = (Date.now() - new Date(dateStr)) / 1000;
+  if (diff < 60) return "just now";
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+};
 
 const Navbar = () => {
   const { user, logout } = useAuth();
-  const {
-    toggleSidebar,
-    notifications,
-    unreadCount,
-    markNotificationRead,
-  } = useApp();
+  const { toggleSidebar, notifications, unreadCount, markNotificationRead, markAllNotificationsRead, clearNotifications, fetchNotifications } = useApp();
   const navigate = useNavigate();
 
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showProfileMenu,  setShowProfileMenu]  = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [showCreateMenu, setShowCreateMenu] = useState(false);
+  const [showCreateMenu,   setShowCreateMenu]   = useState(false);
 
   const profileRef = useRef(null);
-  const notifRef = useRef(null);
-  const createRef = useRef(null);
+  const notifRef   = useRef(null);
+  const createRef  = useRef(null);
 
-  // Helper function to generate a default avatar
-  const getDefaultAvatar = (name) => {
-    if (!name) return "https://ui-avatars.com/api/?name=User&background=6366f1&color=fff&size=200&bold=true";
-    const encodedName = encodeURIComponent(name);
-    return `https://ui-avatars.com/api/?name=${encodedName}&background=6366f1&color=fff&size=200&bold=true`;
-  };
-
-  // Helper to resolve avatar URL (works with Cloudinary)
-  const getAvatarUrl = (avatarPath) => {
-    if (!avatarPath) return getDefaultAvatar(user?.name);
-    // If it's a full URL (Cloudinary, Google OAuth, etc.), use it directly
-    if (avatarPath.startsWith("http")) return avatarPath;
-    // Otherwise, return default
-    return getDefaultAvatar(user?.name);
-  };
-
+  // Close all dropdowns on outside click
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (profileRef.current && !profileRef.current.contains(event.target)) {
-        setShowProfileMenu(false);
-      }
-      if (notifRef.current && !notifRef.current.contains(event.target)) {
-        setShowNotifications(false);
-      }
-      if (createRef.current && !createRef.current.contains(event.target)) {
-        setShowCreateMenu(false);
-      }
+    const handler = (e) => {
+      if (profileRef.current && !profileRef.current.contains(e.target)) setShowProfileMenu(false);
+      if (notifRef.current   && !notifRef.current.contains(e.target))   setShowNotifications(false);
+      if (createRef.current  && !createRef.current.contains(e.target))  setShowCreateMenu(false);
     };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, []);
 
   const handleLogout = () => {
@@ -68,14 +75,29 @@ const Navbar = () => {
     setShowProfileMenu(false);
   };
 
+  const handleNotifClick = useCallback((notif) => {
+    markNotificationRead(notif._id);
+    setShowNotifications(false);
+    if (notif.link) navigate(notif.link);
+  }, [markNotificationRead, navigate]);
+
+  const handleBellClick = () => {
+    setShowNotifications((prev) => {
+      if (!prev) fetchNotifications(); // refresh on open
+      return !prev;
+    });
+  };
+
   return (
     <header className="sticky top-0 z-40 h-16 border-b bg-card/80 backdrop-blur-xl border-border">
       <div className="flex items-center justify-between h-full px-4 lg:px-6">
-        {/* Left Section */}
+
+        {/* Left: Hamburger + Logo */}
         <div className="flex items-center gap-4">
           <button
             onClick={toggleSidebar}
             className="p-2 transition-colors rounded-lg hover:bg-muted lg:hidden"
+            aria-label="Toggle sidebar"
           >
             <Menu className="w-5 h-5 text-foreground" />
           </button>
@@ -90,20 +112,20 @@ const Navbar = () => {
           </Link>
         </div>
 
-        {/* Center - Search */}
+        {/* Center: Search */}
         <div className="justify-center flex-1 hidden max-w-2xl mx-8 md:flex">
           <SearchBar />
         </div>
 
-        {/* Right Section */}
+        {/* Right: Create + Bell + Profile */}
         <div className="flex items-center gap-2">
-          
-          {/* CREATE BUTTON WITH DROPDOWN */}
+
+          {/* ── CREATE DROPDOWN ── */}
           <div ref={createRef} className="relative">
             <button
               onClick={() => setShowCreateMenu(!showCreateMenu)}
-              className="flex items-center gap-2 px-4 py-2 transition-all rounded-lg bg-primary/10 hover:bg-primary/20 text-primary group"
-              title="Create"
+              className="flex items-center gap-2 px-4 py-2 transition-all rounded-lg bg-primary/10 hover:bg-primary/20 text-primary"
+              aria-label="Create"
             >
               <Plus className="w-5 h-5" />
               <span className="hidden text-sm font-medium sm:inline">Create</span>
@@ -136,44 +158,35 @@ const Navbar = () => {
                     </div>
                   </Link>
 
-                  <button 
-                    className="flex items-center w-full gap-3 px-4 py-3 transition-colors hover:bg-muted group"
+                  {/* Go Live → /live-sessions */}
+                  <Link
+                    to="/live-sessions"
                     onClick={() => setShowCreateMenu(false)}
+                    className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted group"
                   >
                     <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-red-500/10 group-hover:bg-red-500/20">
                       <Radio className="w-4 h-4 text-red-500" />
                     </div>
-                    <div className="text-left">
+                    <div>
                       <p className="text-sm font-medium text-foreground">Go Live</p>
                       <p className="text-xs text-muted-foreground">Start live session</p>
                     </div>
-                  </button>
+                  </Link>
 
-                  <button 
-                    className="flex items-center w-full gap-3 px-4 py-3 transition-colors hover:bg-muted group"
+                  {/* New Playlist → /playlists */}
+                  <Link
+                    to="/playlists"
                     onClick={() => setShowCreateMenu(false)}
-                  >
-                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-500/10 group-hover:bg-blue-500/20">
-                      <FileEdit className="w-4 h-4 text-blue-500" />
-                    </div>
-                    <div className="text-left">
-                      <p className="text-sm font-medium text-foreground">New Post</p>
-                      <p className="text-xs text-muted-foreground">Share an update</p>
-                    </div>
-                  </button>
-
-                  <button 
-                    className="flex items-center w-full gap-3 px-4 py-3 transition-colors hover:bg-muted group"
-                    onClick={() => setShowCreateMenu(false)}
+                    className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted group"
                   >
                     <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-green-500/10 group-hover:bg-green-500/20">
                       <ListPlus className="w-4 h-4 text-green-500" />
                     </div>
-                    <div className="text-left">
-                      <p className="text-sm font-medium text-foreground">New Playlist</p>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">My Playlists</p>
                       <p className="text-xs text-muted-foreground">Organize courses</p>
                     </div>
-                  </button>
+                  </Link>
 
                   <div className="h-px my-2 bg-border" />
 
@@ -185,7 +198,7 @@ const Navbar = () => {
                     <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-purple-500/10 group-hover:bg-purple-500/20">
                       <GraduationCap className="w-4 h-4 text-purple-500" />
                     </div>
-                    <div className="text-left">
+                    <div>
                       <p className="text-sm font-medium text-foreground">Creator Studio</p>
                       <p className="text-xs text-muted-foreground">Manage your content</p>
                     </div>
@@ -195,17 +208,22 @@ const Navbar = () => {
             </AnimatePresence>
           </div>
 
-          {/* Notifications */}
+          {/* ── NOTIFICATIONS ── */}
           <div ref={notifRef} className="relative">
             <button
-              onClick={() => setShowNotifications(!showNotifications)}
+              onClick={handleBellClick}
               className="relative p-2 transition-colors rounded-lg hover:bg-muted"
+              aria-label="Notifications"
             >
               <Bell className="w-5 h-5 text-foreground" />
               {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-destructive text-destructive-foreground text-xs font-medium flex items-center justify-center">
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-destructive text-destructive-foreground text-xs font-medium flex items-center justify-center"
+                >
                   {unreadCount > 9 ? "9+" : unreadCount}
-                </span>
+                </motion.span>
               )}
             </button>
 
@@ -216,66 +234,109 @@ const Navbar = () => {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute right-0 z-50 mt-2 overflow-hidden border shadow-xl w-80 bg-card rounded-xl border-border"
+                  className="absolute right-0 z-50 mt-2 overflow-hidden border shadow-xl w-96 bg-card rounded-xl border-border"
                 >
-                  <div className="px-4 py-3 border-b border-border">
-                    <h3 className="font-semibold font-heading text-foreground">Notifications</h3>
+                  {/* Header */}
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+                    <h3 className="font-semibold font-heading text-foreground flex items-center gap-2">
+                      <Bell className="w-4 h-4" />
+                      Notifications
+                      {unreadCount > 0 && (
+                        <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-medium">
+                          {unreadCount} new
+                        </span>
+                      )}
+                    </h3>
+                    <div className="flex items-center gap-1">
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={markAllNotificationsRead}
+                          className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 px-2 py-1 rounded hover:bg-muted"
+                          title="Mark all as read"
+                        >
+                          <CheckCheck className="w-3.5 h-3.5" />
+                          All read
+                        </button>
+                      )}
+                      {notifications.length > 0 && (
+                        <button
+                          onClick={() => { clearNotifications(); }}
+                          className="text-xs text-muted-foreground hover:text-destructive transition-colors flex items-center gap-1 px-2 py-1 rounded hover:bg-muted"
+                          title="Clear all"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </div>
+
+                  {/* List */}
                   <div className="overflow-y-auto max-h-80">
                     {notifications.length === 0 ? (
-                      <div className="px-4 py-8 text-center text-muted-foreground">
-                        <Bell className="w-12 h-12 mx-auto mb-2 opacity-20" />
-                        <p className="text-sm">No notifications yet</p>
+                      <div className="px-4 py-10 text-center text-muted-foreground">
+                        <Bell className="w-10 h-10 mx-auto mb-3 opacity-20" />
+                        <p className="text-sm font-medium">You're all caught up!</p>
+                        <p className="text-xs mt-1 opacity-70">No notifications yet</p>
                       </div>
                     ) : (
-                      notifications.map((notif) => (
-                        <button
-                          key={notif._id}
-                          onClick={() => markNotificationRead(notif._id)}
-                          className={cn(
-                            "w-full px-4 py-3 hover:bg-muted transition-colors text-left border-l-2",
-                            !notif.read ? "bg-accent/30 border-primary" : "border-transparent"
-                          )}
-                        >
-                          <div className="flex items-start gap-3">
-                            <div
-                              className={cn(
-                                "w-2 h-2 rounded-full mt-2 flex-shrink-0",
-                                notif.type === "success" && "bg-success",
-                                notif.type === "info" && "bg-info",
-                                notif.type === "warning" && "bg-warning",
-                                notif.type === "error" && "bg-destructive"
+                      notifications.map((notif) => {
+                        const meta = notifMeta(notif.type);
+                        const Icon = meta.icon;
+                        return (
+                          <button
+                            key={notif._id}
+                            onClick={() => handleNotifClick(notif)}
+                            className={cn(
+                              "w-full px-4 py-3 hover:bg-muted transition-colors text-left border-l-2 group",
+                              !notif.read ? "bg-accent/20 border-primary" : "border-transparent"
+                            )}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className={cn("w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center", meta.bg)}>
+                                <Icon className={cn("w-4 h-4", meta.color)} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-foreground line-clamp-1">{notif.title}</p>
+                                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{notif.message}</p>
+                                <p className="text-xs text-muted-foreground/60 mt-1">{timeAgo(notif.createdAt)}</p>
+                              </div>
+                              {!notif.read && (
+                                <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-1.5" />
                               )}
-                            />
-                            <div className="flex-1">
-                              <p className="text-sm font-medium text-foreground">{notif.title}</p>
-                              <p className="text-xs text-muted-foreground mt-0.5">{notif.message}</p>
                             </div>
-                          </div>
-                        </button>
-                      ))
+                          </button>
+                        );
+                      })
                     )}
                   </div>
+
+                  {/* Footer */}
+                  {notifications.length > 0 && (
+                    <div className="border-t border-border px-4 py-2">
+                      <button
+                        onClick={() => setShowNotifications(false)}
+                        className="text-xs text-primary hover:underline w-full text-center"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
 
-          {/* Profile Dropdown */}
+          {/* ── PROFILE DROPDOWN ── */}
           <div ref={profileRef} className="relative">
             <button
               onClick={() => setShowProfileMenu(!showProfileMenu)}
               className="flex items-center gap-2 p-1 transition-colors rounded-xl hover:bg-muted"
             >
               <img
-                src={getAvatarUrl(user?.avatar)}
+                src={getAvatarUrl(user?.avatar, user?.name)}
                 alt={user?.name || "User"}
                 className="object-cover w-8 h-8 rounded-lg"
-                onError={(e) => {
-                  console.error('❌ Navbar avatar load error');
-                  e.target.onerror = null;
-                  e.target.src = getDefaultAvatar(user?.name);
-                }}
+                onError={(e) => { e.target.onerror = null; e.target.src = getDefaultAvatar(user?.name); }}
               />
               <ChevronDown
                 className={cn(
@@ -297,13 +358,10 @@ const Navbar = () => {
                   <div className="px-4 py-3 border-b border-border">
                     <div className="flex items-center gap-3">
                       <img
-                        src={getAvatarUrl(user?.avatar)}
+                        src={getAvatarUrl(user?.avatar, user?.name)}
                         alt={user?.name || "User"}
                         className="object-cover w-10 h-10 rounded-lg"
-                        onError={(e) => {
-                          e.target.onerror = null;
-                          e.target.src = getDefaultAvatar(user?.name);
-                        }}
+                        onError={(e) => { e.target.onerror = null; e.target.src = getDefaultAvatar(user?.name); }}
                       />
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate text-foreground">{user?.name}</p>
@@ -313,30 +371,22 @@ const Navbar = () => {
                   </div>
 
                   <div className="py-1">
-                    <Link
-                      to="/profile"
-                      onClick={() => setShowProfileMenu(false)}
-                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-muted transition-colors"
-                    >
-                      <User className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm text-foreground">Your Profile</span>
-                    </Link>
-                    <Link
-                      to="/studio"
-                      onClick={() => setShowProfileMenu(false)}
-                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-muted transition-colors"
-                    >
-                      <GraduationCap className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm text-foreground">Creator Studio</span>
-                    </Link>
-                    <Link
-                      to="/settings"
-                      onClick={() => setShowProfileMenu(false)}
-                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-muted transition-colors"
-                    >
-                      <Settings className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm text-foreground">Settings</span>
-                    </Link>
+                    {[
+                      { to: "/profile",      icon: User,          label: "Your Profile" },
+                      { to: "/achievements", icon: Trophy,         label: "Achievements" },
+                      { to: "/studio",       icon: GraduationCap, label: "Creator Studio" },
+                      { to: "/settings",     icon: Settings,      label: "Settings" },
+                    ].map((item) => (
+                      <Link
+                        key={item.to}
+                        to={item.to}
+                        onClick={() => setShowProfileMenu(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 hover:bg-muted transition-colors"
+                      >
+                        <item.icon className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm text-foreground">{item.label}</span>
+                      </Link>
+                    ))}
                   </div>
 
                   <div className="py-1 border-t border-border">
@@ -358,4 +408,4 @@ const Navbar = () => {
   );
 };
 
-export default Navbar;
+export default React.memo(Navbar);

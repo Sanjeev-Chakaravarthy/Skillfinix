@@ -51,16 +51,19 @@ const MyCourses = () => {
           </h2>
           {inProgress.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {inProgress.map((course, idx) => (
-                <motion.div
-                  key={course._id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.1 }}
-                >
-                  <ProgressCard course={course} />
-                </motion.div>
-              ))}
+              {inProgress.map((item, idx) => {
+                const courseData = { ...(item.course || item), progress: item.progress };
+                return (
+                  <motion.div
+                    key={item._id || courseData._id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.1 }}
+                  >
+                    <ProgressCard course={courseData} />
+                  </motion.div>
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-12 bg-muted/30 rounded-2xl border border-dashed border-border">
@@ -77,16 +80,19 @@ const MyCourses = () => {
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {completed.length > 0 ? (
-              completed.map((course, idx) => (
-                <motion.div
-                  key={course._id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.1 }}
-                >
-                  <CourseCard course={course} />
-                </motion.div>
-              ))
+              completed.map((item, idx) => {
+                const courseData = { ...(item.course || item), progress: item.progress };
+                return (
+                  <motion.div
+                    key={item._id || courseData._id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.1 }}
+                  >
+                    <CourseCard course={courseData} />
+                  </motion.div>
+                );
+              })
             ) : (
                <div className="col-span-full py-12 text-center bg-muted/30 rounded-2xl border border-dashed border-border">
                 <p className="text-muted-foreground">No completed courses yet. Keep going!</p>

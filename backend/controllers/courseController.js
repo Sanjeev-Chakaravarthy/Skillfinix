@@ -112,7 +112,7 @@ const createCourse = async (req, res) => {
     const user = await User.findById(req.user.id);
     
     const newCourse = new Course({
-      user: req.user.id, // Link to creator
+      user: req.user.id,
       title,
       description,
       category,
@@ -120,18 +120,18 @@ const createCourse = async (req, res) => {
       tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
       visibility: visibility || 'public',
       price: price || 0,
-      videoUrl: videoFile.path, 
-      thumbnail: thumbnailUrl, 
-      instructor: user.name, 
+      videoUrl: videoFile.path,
+      thumbnail: thumbnailUrl,
+      instructor: user.name,
       instructorAvatar: user.avatar,
-      duration: '00:00', // Placeholder, ideally get from metadata
+      // Real duration sent by frontend (extracted from HTML5 video metadata)
+      // If not provided, leave undefined so UI won't show fake value
+      ...(req.body.duration ? { duration: req.body.duration } : {}),
     });
 
     const savedCourse = await newCourse.save();
-    console.log('✅ Course created successfully:', savedCourse._id);
     res.status(201).json(savedCourse);
   } catch (error) {
-    console.error('❌ Error creating course:', error);
     res.status(500).json({ message: 'Server Error: ' + error.message });
   }
 };
