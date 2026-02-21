@@ -30,6 +30,12 @@ import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
 import ProtectedRoute from "@/pages/ProtectedRoute";
 
+// New Pages
+import StartLearning from "@/pages/StartLearning";
+import LiveSessions from "@/pages/LiveSessions";
+import Support from "@/pages/Support";
+import MySwaps from "@/pages/MySwaps";
+
 // Studio Pages
 import StudioLayout from "@/Layouts/StudioLayout";
 import StudioDashboard from "@/pages/studio/Dashboard";
@@ -66,6 +72,17 @@ const AuthLayout = () => {
   );
 };
 
+// Simple placeholder page component
+const ComingSoon = ({ title }) => (
+  <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+    <div className="w-20 h-20 rounded-full gradient-primary flex items-center justify-center mx-auto mb-5">
+      <span className="text-3xl">🚀</span>
+    </div>
+    <h2 className="text-2xl font-bold text-foreground mb-2">{title}</h2>
+    <p className="text-muted-foreground">This feature is coming soon. Stay tuned!</p>
+  </div>
+);
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <BrowserRouter>
@@ -101,14 +118,24 @@ const App = () => (
                   <Route path="/favorites" element={<Favorites />} />
                   <Route path="/watch-later" element={<WatchLater />} />
                   <Route path="/liked" element={<LikedContent />} />
-                  <Route path="/playlists" element={<MyCourses />} /> {/* Placeholder */}
-                  <Route path="/achievements" element={<MyCourses />} /> {/* Placeholder */}
-                  <Route path="/videos" element={<MyCourses />} /> {/* Placeholder */}
+                  <Route path="/playlists" element={<MyCourses />} />
+                  <Route path="/achievements" element={<MyCourses />} />
+                  <Route path="/videos" element={<MyCourses />} />
 
                   {/* Discovery */}
                   <Route path="/explore" element={<Explore />} />
                   <Route path="/trending" element={<Trending />} />
-                  <Route path="/live" element={<div className="p-8 text-center text-muted-foreground">Live sessions coming soon!</div>} />
+                  
+                  {/* New Feature Routes */}
+                  <Route path="/start-learning" element={<StartLearning />} />
+                  <Route path="/live-sessions" element={<LiveSessions />} />
+                  <Route path="/support" element={<Support />} />
+                  <Route path="/my-swaps" element={<MySwaps />} />
+                  <Route path="/communities" element={<ComingSoon title="Communities" />} />
+
+                  {/* Redirect old routes */}
+                  <Route path="/live" element={<Navigate to="/live-sessions" replace />} />
+                  <Route path="/mentors" element={<Navigate to="/barters" replace />} />
 
                   {/* User Profile */}
                   <Route path="/profile" element={<Profile />} />

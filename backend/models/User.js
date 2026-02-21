@@ -4,14 +4,24 @@ const userSchema = mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  avatar: { type: String, default: "https://github.com/shadcn.png" },
-  bio: { type: String, default: "New to Skillfinix!" },
-  
-  skills: [{ type: String }],    // "Can Teach"
-  interests: [{ type: String }], // "Wants to Learn" (NEW)
-  
-  role: { type: String, default: "student" },
-  location: { type: String, default: "Earth" },
+  avatar: { type: String, default: 'https://github.com/shadcn.png' },
+  bio: { type: String, default: 'New to Skillfinix!' },
+
+  // Core barter fields
+  skills: [{ type: String }],           // Skills this user CAN TEACH (formerly skills)
+  interests: [{ type: String }],        // Skills this user WANTS TO LEARN
+
+  // Enhanced skill barter profile
+  skillLevel: {
+    type: String,
+    enum: ['Beginner', 'Intermediate', 'Advanced'],
+    default: 'Beginner',
+  },
+
+  // Only two roles: user and admin (no mentor)
+  role: { type: String, enum: ['user', 'student', 'admin'], default: 'user' },
+
+  location: { type: String, default: 'Earth' },
   joinedDate: { type: Date, default: Date.now },
 }, { timestamps: true });
 
