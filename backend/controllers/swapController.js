@@ -1,5 +1,6 @@
 const SkillSwap = require('../models/SkillSwap');
 const User = require('../models/User');
+const { createNotification } = require('./notificationController');
 
 // @desc   Create a swap request
 // @route  POST /api/swaps
@@ -19,7 +20,6 @@ const createSwap = async (req, res) => {
     const recipient = await User.findById(recipientId);
     if (!recipient) return res.status(404).json({ message: 'Recipient not found.' });
 
-    // Check for duplicate pending/accepted request
     const existing = await SkillSwap.findOne({
       requester: req.user.id,
       recipient: recipientId,
@@ -28,6 +28,8 @@ const createSwap = async (req, res) => {
     if (existing) {
       return res.status(409).json({ message: 'You already have an active swap request with this user.' });
     }
+
+    const requesterUser = await User.findById(req.user.id).select('name');
 
     const swap = await SkillSwap.create({
       requester: req.user.id,
@@ -43,9 +45,17 @@ const createSwap = async (req, res) => {
       { path: 'recipient', select: 'name avatar skills interests' },
     ]);
 
+    // Real notification to recipient
+    await createNotification(
+      recipientId,
+      'New Swap Request',
+      `${requesterUser.name} wants to swap "${teachSkill}" for "${learnSkill}"`,
+      'barter',
+      '/my-swaps'
+    );
+
     res.status(201).json(swap);
   } catch (error) {
-    console.error('Create swap error:', error);
     res.status(500).json({ message: 'Server Error', error: error.message });
   }
 };
@@ -75,7 +85,6 @@ const getMySwaps = async (req, res) => {
 
     res.status(200).json(swaps);
   } catch (error) {
-    console.error('Get swaps error:', error);
     res.status(500).json({ message: 'Server Error' });
   }
 };
@@ -104,9 +113,17 @@ const acceptSwap = async (req, res) => {
       { path: 'recipient', select: 'name avatar skills interests' },
     ]);
 
+    const acceptor = await User.findById(req.user.id).select('name');
+    await createNotification(
+      swap.requester._id,
+      'Swap Request Accepted! 🎉',
+      `${acceptor.name} accepted your swap: "${swap.teachSkill}" ↔ "${swap.learnSkill}"`,
+      'success',
+      '/my-swaps'
+    );
+
     res.status(200).json(swap);
   } catch (error) {
-    console.error('Accept swap error:', error);
     res.status(500).json({ message: 'Server Error' });
   }
 };
@@ -132,7 +149,6 @@ const rejectSwap = async (req, res) => {
 
     res.status(200).json(swap);
   } catch (error) {
-    console.error('Reject swap error:', error);
     res.status(500).json({ message: 'Server Error' });
   }
 };
@@ -175,24 +191,32 @@ const completeSwap = async (req, res) => {
       { path: 'recipient', select: 'name avatar skills interests' },
     ]);
 
+    const completedBy = await User.findById(req.user.id).select('name');
+    const notifyId = isRequester ? swap.recipient._id : swap.requester._id;
+    await createNotification(
+      notifyId,
+      'Swap Completed! ✨',
+      `${completedBy.name} marked your swap as completed.`,
+      'success',
+      '/my-swaps'
+    );
+
     res.status(200).json(swap);
   } catch (error) {
-    console.error('Complete swap error:', error);
     res.status(500).json({ message: 'Server Error' });
   }
 };
 
-// @desc   Get swap stats (for homepage/barters)
+// @desc   Get swap stats
 // @route  GET /api/swaps/stats
 // @access Public
 const getSwapStats = async (req, res) => {
   try {
-    const total = await SkillSwap.countDocuments();
+    const total     = await SkillSwap.countDocuments();
     const completed = await SkillSwap.countDocuments({ status: 'Completed' });
-    const pending = await SkillSwap.countDocuments({ status: 'Pending' });
-    const accepted = await SkillSwap.countDocuments({ status: 'Accepted' });
+    const pending   = await SkillSwap.countDocuments({ status: 'Pending' });
+    const accepted  = await SkillSwap.countDocuments({ status: 'Accepted' });
 
-    // Most popular teach skills
     const popularSkills = await SkillSwap.aggregate([
       { $group: { _id: '$teachSkill', count: { $sum: 1 } } },
       { $sort: { count: -1 } },

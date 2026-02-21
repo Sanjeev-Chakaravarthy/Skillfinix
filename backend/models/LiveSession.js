@@ -43,4 +43,9 @@ liveSessionSchema.methods.computeStatus = function () {
   return 'ended';
 };
 
+// ── Indexes for production query performance ──────────────────────────────────
+liveSessionSchema.index({ title: 'text', description: 'text', tags: 'text' });
+liveSessionSchema.index({ scheduledAt: 1, status: 1 });
+liveSessionSchema.index({ mentor: 1, scheduledAt: -1 });
+
 module.exports = mongoose.model('LiveSession', liveSessionSchema);

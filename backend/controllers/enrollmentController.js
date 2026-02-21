@@ -133,7 +133,7 @@ const getRecentEnrollments = async (req, res) => {
     const { limit = 3 } = req.query;
 
     const enrollments = await Enrollment.find({ user: req.user.id, progress: { $lt: 100 } })
-      .populate('course', 'title thumbnail')
+      .populate('course', 'title thumbnail duration instructor instructorAvatar')
       .sort({ lastWatchedAt: -1 })
       .limit(parseInt(limit));
 
@@ -143,6 +143,9 @@ const getRecentEnrollments = async (req, res) => {
         _id: e.course._id,
         title: e.course.title,
         thumbnail: e.course.thumbnail,
+        duration: e.course.duration,
+        instructor: e.course.instructor,
+        instructorAvatar: e.course.instructorAvatar,
         progress: e.progress
       }));
 

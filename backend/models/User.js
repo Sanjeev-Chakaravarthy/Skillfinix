@@ -22,7 +22,12 @@ const userSchema = mongoose.Schema({
   role: { type: String, enum: ['user', 'student', 'admin'], default: 'user' },
 
   location: { type: String, default: 'Earth' },
-  joinedDate: { type: Date, default: Date.now },
 }, { timestamps: true });
+
+// ── Indexes for production query performance ──────────────────────────────────
+// Text index on skills and interests for fast barter matching
+userSchema.index({ skills: 'text', interests: 'text' });
+userSchema.index({ role: 1 });
+userSchema.index({ skillLevel: 1 });
 
 module.exports = mongoose.model('User', userSchema);
