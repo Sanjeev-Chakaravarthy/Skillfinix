@@ -60,6 +60,7 @@ app.use('/api/support', require('./routes/supportRoutes'));
 app.use('/api/swaps', require('./routes/swapRoutes'));
 app.use('/api/categories', require('./routes/categoryRoutes'));
 app.use('/api/discussions', require('./routes/discussionRoutes'));
+app.use('/api/communities', require('./routes/communityRoutes'));
 
 // ==========================================================================
 // GLOBAL SEARCH ENDPOINT — searches across courses, users, and skills

@@ -229,35 +229,15 @@ const SkillVideoPlayer = ({ course, loading, error, className }) => {
       onMouseMove={resetHideControlsTimer}
       onMouseLeave={() => { if (videoRef.current && !videoRef.current.paused) setShowControls(false); }}
       className={cn(
-        "relative w-full overflow-hidden flex flex-col font-sans",
-        isTheaterMode ? "fixed inset-0 z-50 rounded-none w-screen h-screen items-center justify-center p-0 m-0 bg-black" : "",
-        isFullscreen 
-          ? "fixed inset-0 z-[9999] rounded-none w-screen h-screen items-center justify-center p-0 m-0 bg-black" 
-          : "rounded-2xl shadow-2xl bg-black group border border-border/40",
+        "relative w-full rounded-2xl overflow-hidden shadow-2xl bg-black group flex flex-col font-sans",
+        isTheaterMode ? "fixed inset-0 z-50 rounded-none w-screen h-screen align-center justify-center p-0 m-0" : "",
+        isFullscreen && "rounded-none border-none",
         className
       )}
       style={!isTheaterMode && !isFullscreen ? { aspectRatio, margin: 0, padding: 0 } : {}}
     >
       {/* 
-        LAYER 1: BLURRED BACKGROUND = BEAUTIFUL INTENTIONAL FILL (Removes raw black bars)
-      */}
-      <video
-        src={course.videoUrl}
-        className="absolute inset-0 w-full h-full object-cover scale-110 opacity-30 blur-3xl pointer-events-none"
-        aria-hidden="true"
-        ref={(el) => {
-          if (el && videoRef.current) {
-            el.currentTime = videoRef.current.currentTime;
-            el.playbackRate = videoRef.current.playbackRate;
-            videoRef.current.paused ? el.pause() : el.play();
-          }
-        }}
-        muted
-        playsInline
-      />
-
-      {/* 
-        LAYER 2: MAIN VIDEO TRACK 
+        MAIN VIDEO TRACK 
         Stays strictly `contain`
       */}
       <video
@@ -266,11 +246,9 @@ const SkillVideoPlayer = ({ course, loading, error, className }) => {
         poster={course.thumbnail}
         preload="metadata"
         onClick={togglePlayPause}
-        className={cn(
-          "relative cursor-pointer z-0 opacity-100",
-          isFullscreen || isTheaterMode ? "w-screen h-screen max-w-[100vw] max-h-[100vh] object-contain" : "w-full h-full object-contain"
-        )}
+        className="relative w-full h-full object-contain cursor-pointer z-0 opacity-100"
         playsInline
+        style={{ width: "100%", height: "100%" }}
       />
 
       {/* DOUBLE TAP ACTION UI (10s Skips) */}

@@ -117,8 +117,17 @@ const PlayerControls = ({
           </div>
 
           {/* Right Actions */}
-          <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 shrink-0 pr-1">
+          <div className="flex items-center gap-2 sm:gap-4">
             <PlaybackSettings videoRef={videoRef} />
+
+            {/* Focus Mode (MINI) */}
+            <button 
+              onClick={toggleMiniPlayer}
+              className="text-white hover:text-primary transition-all hover:scale-110 p-1.5 rounded-full hover:bg-white/10 hidden sm:block focus:outline-none"
+              title="Focus Mode (Mini-player)"
+            >
+               <PictureInPicture className="w-[20px] h-[20px] stroke-[1.5]" />
+            </button>
 
             {/* Deep Learn Mode (Theater) */}
             <button 
@@ -126,7 +135,7 @@ const PlayerControls = ({
               className="text-white hover:text-primary transition-all hover:scale-110 p-1.5 rounded-full hover:bg-white/10 hidden sm:block focus:outline-none"
               title="Deep Learn Mode (Theater)"
             >
-               <RectangleHorizontal className="w-[18px] h-[18px] sm:w-[20px] sm:h-[20px] stroke-[1.5]" />
+               <RectangleHorizontal className="w-[20px] h-[20px] stroke-[1.5]" />
             </button>
 
             {/* Fullscreen */}
@@ -136,9 +145,9 @@ const PlayerControls = ({
               title="Fullscreen (F)"
             >
                {isFullscreen ? (
-                  <Minimize className="w-[18px] h-[18px] sm:w-[22px] sm:h-[22px] stroke-[1.5]" />
+                  <Minimize className="w-[22px] h-[22px] stroke-[1.5]" />
                 ) : (
-                  <Maximize className="w-[18px] h-[18px] sm:w-[22px] sm:h-[22px] stroke-[1.5]" />
+                  <Maximize className="w-[22px] h-[22px] stroke-[1.5]" />
                 )}
             </button>
           </div>

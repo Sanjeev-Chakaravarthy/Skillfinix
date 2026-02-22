@@ -36,6 +36,7 @@ const StartLearning = lazy(() => import("@/pages/StartLearning"));
 const LiveSessions  = lazy(() => import("@/pages/LiveSessions"));
 const Support       = lazy(() => import("@/pages/Support"));
 const MySwaps       = lazy(() => import("@/pages/MySwaps"));
+const Communities   = lazy(() => import("@/pages/Communities"));
 const UploadVideo   = lazy(() => import("@/pages/UploadVideo"));
 const NotFound      = lazy(() => import("@/pages/NotFound"));
 const Login         = lazy(() => import("@/pages/Login"));
@@ -157,7 +158,7 @@ const App = () => (
                     <Route path="/live-sessions"  element={<LiveSessions />} />
                     <Route path="/support"        element={<Support />} />
                     <Route path="/my-swaps"       element={<MySwaps />} />
-                    <Route path="/communities"    element={<ComingSoon title="Communities" />} />
+                    <Route path="/communities"    element={<Communities />} />
 
                     {/* Profile & Settings */}
                     <Route path="/profile"  element={<Profile />} />
