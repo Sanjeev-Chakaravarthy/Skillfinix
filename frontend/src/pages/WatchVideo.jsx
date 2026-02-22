@@ -6,7 +6,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
 // Modular Components
-import SkillPlayer from "@/components/SkillPlayer";
+import SkillVideoPlayer from "@/components/player/SkillVideoPlayer";
 import SkillStats from "@/components/SkillStats";
 import SkillActions from "@/components/SkillActions";
 import SkillOwnerCard from "@/components/SkillOwnerCard";
@@ -101,7 +101,7 @@ const WatchVideo = () => {
       <div className="w-full xl:w-[72%] max-w-[1100px] mx-auto xl:mx-0 flex flex-col gap-5">
         
         {/* The YouTube-like Skill Player */}
-        <SkillPlayer course={course} loading={loading} error={error} />
+        <SkillVideoPlayer course={course} loading={loading} error={error} />
         
         {!loading && course && (
           <div className="flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-500">
