@@ -50,6 +50,11 @@ const SkillChat = () => {
   const [uploading, setUploading] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   
+  // Image Preview Modal states
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewIndex, setPreviewIndex] = useState(0);
+  const [previewImages, setPreviewImages] = useState([]);
+  
   // Voice recording states
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -68,6 +73,22 @@ const SkillChat = () => {
   // Auto-scroll to bottom
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleImageClick = (clickedUrl) => {
+    // Extract all image URLs from current chat for infinite gallery navigation
+    const allImages = messages
+      .filter(m => m.fileType === 'image' && m.fileUrl)
+      .map(m => ({ url: m.fileUrl }));
+    let idx = allImages.findIndex(img => img.url === clickedUrl);
+    if (idx < 0) {
+      idx = 0;
+      setPreviewImages([{ url: clickedUrl }]);
+    } else {
+      setPreviewImages(allImages);
+    }
+    setPreviewIndex(idx);
+    setPreviewOpen(true);
   };
 
   // Fetch conversations
@@ -1060,6 +1081,7 @@ const SkillChat = () => {
                               filename: message.fileUrl.split('/').pop()
                             }} 
                             isMe={isMe}
+                            onImageClick={handleImageClick}
                           />
                         </div>
                       )}
@@ -1332,12 +1354,47 @@ const SkillChat = () => {
           </div>
         </div>
       )}
+
+      {/* Internal Modal Lightbox */}
+      {previewOpen && previewImages.length > 0 && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90">
+          <button
+            className="absolute p-2 text-3xl text-white transition-opacity top-4 right-6 hover:opacity-75"
+            onClick={() => setPreviewOpen(false)}
+          >
+            ✕
+          </button>
+          
+          {previewImages.length > 1 && (
+            <button
+              className="absolute p-4 text-4xl text-white transition-opacity left-4 hover:opacity-75"
+              onClick={() => setPreviewIndex(i => i > 0 ? i - 1 : i)}
+            >
+              ‹
+            </button>
+          )}
+
+          <img
+            src={previewImages[previewIndex].url}
+            className="max-h-[85vh] max-w-[90vw] rounded-lg shadow-2xl object-contain"
+          />
+
+          {previewImages.length > 1 && (
+            <button
+              className="absolute p-4 text-4xl text-white transition-opacity right-4 hover:opacity-75"
+              onClick={() => setPreviewIndex(i => i < previewImages.length - 1 ? i + 1 : i)}
+            >
+              ›
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 };
 
 // Attachment Preview Component
-const AttachmentPreview = ({ attachment, isMe }) => {
+const AttachmentPreview = ({ attachment, isMe, onImageClick }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef(null);
 
@@ -1354,10 +1411,8 @@ const AttachmentPreview = ({ attachment, isMe }) => {
 
   if (attachment.type === 'image') {
     return (
-      <a 
-        href={attachment.url} 
-        target="_blank" 
-        rel="noopener noreferrer"
+      <div 
+        onClick={() => onImageClick && onImageClick(attachment.url)} 
         className="block"
       >
         <img 
@@ -1366,7 +1421,7 @@ const AttachmentPreview = ({ attachment, isMe }) => {
           className="max-w-full transition-opacity rounded-xl cursor-pointer hover:opacity-90 border border-border/50 shadow-sm"
           style={{ maxHeight: '300px' }}
         />
-      </a>
+      </div>
     );
   }
 
