@@ -449,9 +449,7 @@ const SkillChat = () => {
         formData.append('files', file);
       });
 
-      const res = await api.post('/chat/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      const res = await api.post('/chat/upload', formData);
 
       return res.data.files;
     } catch (error) {
@@ -672,9 +670,7 @@ const SkillChat = () => {
       
       formData.append('files', audioFile);
       
-      const uploadRes = await api.post('/chat/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      const uploadRes = await api.post('/chat/upload', formData);
       
       if (!uploadRes.data.files?.length) {
         throw new Error('No file URL received from upload');
