@@ -37,7 +37,7 @@ const Trending = () => {
     <div className="max-w-[1600px] mx-auto px-4 lg:px-6 py-8 pb-20">
       
       {/* Hero Header */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-orange-500/10 via-red-500/5 to-transparent border border-red-500/20 p-8 sm:p-10 mb-10 flex flex-col justify-center">
+      <div className="relative w-full max-w-full overflow-hidden rounded-3xl bg-gradient-to-r from-orange-500/10 via-red-500/5 to-transparent border border-red-500/20 p-6 sm:p-8 mb-10 flex flex-col justify-center">
         <div className="absolute -top-10 -right-10 w-40 h-40 bg-orange-500/20 blur-[80px] rounded-full" />
         <div className="absolute -bottom-10 right-20 w-32 h-32 bg-red-500/20 blur-[60px] rounded-full" />
         

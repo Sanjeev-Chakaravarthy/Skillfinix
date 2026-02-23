@@ -1,4 +1,5 @@
 const Community = require('../models/Community');
+const User = require('../models/User'); // Required for Schema 'User' to populate correctly if first boot
 
 // @desc    Get all communities
 // @route   GET /api/communities

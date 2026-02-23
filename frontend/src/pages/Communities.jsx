@@ -22,6 +22,7 @@ const Communities = () => {
       const { data } = await api.get('/communities');
       setCommunities(data || []);
     } catch (error) {
+      console.error("Community fetch error:", error?.response?.data || error.message);
       toast({ title: "Failed to load communities", variant: "destructive" });
     } finally {
       setLoading(false);

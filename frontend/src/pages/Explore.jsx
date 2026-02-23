@@ -34,7 +34,7 @@ const Explore = () => {
     <div className="max-w-[1600px] mx-auto px-4 lg:px-6 py-8 pb-20">
       
       {/* Premium Header */}
-      <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-transparent border border-indigo-500/20 px-8 py-16 sm:px-16 mb-12 flex flex-col items-center text-center">
+      <div className="relative w-full max-w-full overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-transparent border border-indigo-500/20 p-8 sm:p-12 mb-12 flex flex-col items-center text-center">
         <div className="absolute top-0 left-10 w-64 h-64 bg-indigo-500/20 blur-[100px] rounded-full pointer-events-none" />
         <div className="absolute bottom-0 right-10 w-64 h-64 bg-purple-500/20 blur-[100px] rounded-full pointer-events-none" />
         
