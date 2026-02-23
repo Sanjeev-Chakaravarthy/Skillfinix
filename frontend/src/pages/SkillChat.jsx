@@ -91,6 +91,23 @@ const SkillChat = () => {
     setPreviewOpen(true);
   };
 
+  // Add Escape key listener for image preview
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setPreviewOpen(false);
+      }
+    };
+
+    if (previewOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [previewOpen]);
+
   // Fetch conversations
   const fetchConversations = async () => {
     try {
@@ -1357,32 +1374,47 @@ const SkillChat = () => {
 
       {/* Internal Modal Lightbox */}
       {previewOpen && previewImages.length > 0 && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 cursor-pointer animate-in fade-in duration-200"
+          onClick={() => setPreviewOpen(false)}
+        >
           <button
-            className="absolute p-2 text-3xl text-white transition-opacity top-4 right-6 hover:opacity-75"
-            onClick={() => setPreviewOpen(false)}
+            className="absolute p-2 text-3xl text-white transition-opacity top-4 right-6 hover:opacity-75 z-10"
+            onClick={(e) => {
+              e.stopPropagation();
+              setPreviewOpen(false);
+            }}
           >
             ✕
           </button>
           
           {previewImages.length > 1 && (
             <button
-              className="absolute p-4 text-4xl text-white transition-opacity left-4 hover:opacity-75"
-              onClick={() => setPreviewIndex(i => i > 0 ? i - 1 : i)}
+              className="absolute p-4 text-4xl text-white transition-opacity left-4 hover:opacity-75 z-10"
+              onClick={(e) => {
+                e.stopPropagation();
+                setPreviewIndex(i => i > 0 ? i - 1 : i);
+              }}
             >
               ‹
             </button>
           )}
 
-          <img
-            src={previewImages[previewIndex].url}
-            className="max-h-[85vh] max-w-[90vw] rounded-lg shadow-2xl object-contain"
-          />
+          <div className="relative max-h-[85vh] max-w-[90vw] flex items-center justify-center p-4">
+            <img
+              src={previewImages[previewIndex].url}
+              className="max-h-[85vh] max-w-[90vw] rounded-lg shadow-2xl object-contain cursor-default"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
 
           {previewImages.length > 1 && (
             <button
-              className="absolute p-4 text-4xl text-white transition-opacity right-4 hover:opacity-75"
-              onClick={() => setPreviewIndex(i => i < previewImages.length - 1 ? i + 1 : i)}
+              className="absolute p-4 text-4xl text-white transition-opacity right-4 hover:opacity-75 z-10"
+              onClick={(e) => {
+                e.stopPropagation();
+                setPreviewIndex(i => i < previewImages.length - 1 ? i + 1 : i);
+              }}
             >
               ›
             </button>
