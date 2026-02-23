@@ -122,22 +122,23 @@ const getMessages = async (req, res) => {
 // @route   POST /api/chat/messages
 const sendMessage = async (req, res) => {
   try {
-    const { receiverId, text, attachments } = req.body;
+    const { receiverId, text, fileUrl, fileType } = req.body;
 
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('📨 API: Send message request');
     console.log('   Sender:', req.user._id.toString(), '(' + req.user.name + ')');
     console.log('   Receiver:', receiverId);
     console.log('   Text:', text);
+    console.log('   FileURL:', fileUrl);
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
     if (!receiverId) {
       return res.status(400).json({ message: 'Receiver ID is required' });
     }
 
-    // Allow messages with attachments but no text
-    if (!text && (!attachments || attachments.length === 0)) {
-      return res.status(400).json({ message: 'Message text or attachments are required' });
+    // Allow messages with fileUrl but no text
+    if (!text && !fileUrl) {
+      return res.status(400).json({ message: 'Message text or file is required' });
     }
 
     // Validate receiver exists
@@ -155,7 +156,8 @@ const sendMessage = async (req, res) => {
       sender: req.user._id,
       receiver: receiverId,
       // ✅ Set delivered: true ONLY if receiver is online
-      delivered: isReceiverOnline
+      delivered: isReceiverOnline,
+      fileType: fileType || 'text'
     };
 
     if (isReceiverOnline) {
@@ -166,8 +168,8 @@ const sendMessage = async (req, res) => {
       messageData.text = text.trim();
     }
 
-    if (attachments && attachments.length > 0) {
-      messageData.attachments = attachments;
+    if (fileUrl) {
+      messageData.fileUrl = fileUrl;
     }
 
     const message = await Message.create(messageData);

@@ -664,11 +664,7 @@ const SkillChat = () => {
       else if (audioBlob.type.includes('mpeg')) extension = 'mp3';
       
       const filename = `voice_${Date.now()}.${extension}`;
-      const audioFile = new File([audioBlob], filename, {
-        type: audioBlob.type || 'audio/webm'
-      });
-      
-      formData.append('files', audioFile);
+      formData.append('files', audioBlob, filename);
       
       const uploadRes = await api.post('/chat/upload', formData);
       
@@ -693,7 +689,8 @@ const SkillChat = () => {
           avatar: selectedChat.user.avatar
         },
         text: '',
-        attachments: [uploadedFile],
+        fileUrl: uploadedFile.url,
+        fileType: uploadedFile.type,
         read: false,
         delivered: false, // ✅ Default to false
         deliveryStatus: 'sending',
@@ -706,7 +703,8 @@ const SkillChat = () => {
       const messageRes = await api.post('/chat/messages', {
         receiverId: selectedChat.user._id,
         text: '',
-        attachments: [uploadedFile]
+        fileUrl: uploadedFile.url,
+        fileType: uploadedFile.type
       });
       
       console.log('✅ Voice message created:', messageRes.data._id);
@@ -764,9 +762,14 @@ const SkillChat = () => {
     try {
       setSending(true);
 
-      let attachments = [];
+      let fileUrl = null;
+      let fileType = 'text';
       if (selectedFiles.length > 0) {
-        attachments = await uploadFiles(selectedFiles);
+        const uploadedFiles = await uploadFiles([selectedFiles[0]]);
+        if (uploadedFiles.length > 0) {
+          fileUrl = uploadedFiles[0].url;
+          fileType = uploadedFiles[0].type || 'file';
+        }
         setSelectedFiles([]);
       }
 
@@ -780,7 +783,8 @@ const SkillChat = () => {
         sender: user,
         receiver: selectedChat.user,
         text: messageText,
-        attachments,
+        fileUrl,
+        fileType,
         read: false,
         delivered: false, // ✅ Default to false
         deliveryStatus: 'sending',
@@ -795,7 +799,8 @@ const SkillChat = () => {
       const res = await api.post('/chat/messages', {
         receiverId: selectedChat.user._id,
         text: messageText,
-        attachments
+        fileUrl,
+        fileType
       });
 
       const serverMessage = {
@@ -934,10 +939,10 @@ const SkillChat = () => {
                     <div className="flex items-center justify-between">
                       <p className="text-sm truncate text-muted-foreground">
                         {conv.lastMessage.text || 
-                         (conv.lastMessage.attachments?.length > 0 ? 
-                          conv.lastMessage.attachments[0].type === 'audio' ? '🎤 Voice message' :
-                          conv.lastMessage.attachments[0].type === 'image' ? '📷 Image' :
-                          conv.lastMessage.attachments[0].type === 'video' ? '🎥 Video' :
+                         (conv.lastMessage.fileUrl ? 
+                          conv.lastMessage.fileType === 'audio' ? '🎤 Voice message' :
+                          conv.lastMessage.fileType === 'image' ? '📷 Image' :
+                          conv.lastMessage.fileType === 'video' ? '🎥 Video' :
                           '📎 File' : 
                           'No messages yet')}
                       </p>
@@ -1037,15 +1042,16 @@ const SkillChat = () => {
                       "max-w-[70%] space-y-1",
                       isMe && "items-end"
                     )}>
-                      {message.attachments?.length > 0 && (
+                      {message.fileUrl && (
                         <div className="space-y-2">
-                          {message.attachments.map((attachment, idx) => (
-                            <AttachmentPreview 
-                              key={`${message._id}_attachment_${idx}`}
-                              attachment={attachment} 
-                              isMe={isMe}
-                            />
-                          ))}
+                          <AttachmentPreview 
+                            attachment={{
+                              url: message.fileUrl,
+                              type: message.fileType,
+                              filename: message.fileUrl.split('/').pop()
+                            }} 
+                            isMe={isMe}
+                          />
                         </div>
                       )}
                       {message.text && (
