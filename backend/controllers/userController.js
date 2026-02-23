@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Report = require('../models/Report');
 
 // @desc    Get users for bartering (excluding current user)
 // @route   GET /api/users/barters
@@ -84,7 +85,81 @@ const generateToken = (id) => {
   });
 };
 
+// @desc    Block or unblock a user
+// @route   PUT /api/users/block/:id
+// @access  Private
+const blockUser = async (req, res) => {
+  try {
+    const userIdToBlock = req.params.id;
+    const currentUserId = req.user._id.toString();
+
+    console.log('Blocking request:', { from: currentUserId, to: userIdToBlock });
+
+    if (!userIdToBlock || userIdToBlock === 'undefined') {
+      return res.status(400).json({ message: 'Target user ID is missing' });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'Current user not found' });
+    }
+
+    if (userIdToBlock === currentUserId) {
+      return res.status(400).json({ message: 'You cannot block yourself' });
+    }
+
+    // Ensure array exists
+    if (!user.blockedUsers) {
+      user.blockedUsers = [];
+    }
+
+    const isBlocked = (user.blockedUsers || []).some(id => id && id.toString() === userIdToBlock.toString());
+
+    if (isBlocked) {
+      // Unblock
+      user.blockedUsers = (user.blockedUsers || []).filter(id => id && id.toString() !== userIdToBlock.toString());
+    } else {
+      // Block
+      user.blockedUsers.push(userIdToBlock);
+    }
+
+    await user.save();
+    res.status(200).json({ 
+      success: true, 
+      message: isBlocked ? 'User unblocked' : 'User blocked',
+      isBlocked: !isBlocked
+    });
+  } catch (error) {
+    console.error('Error blocking user:', error);
+    res.status(500).json({ message: 'Server Error', details: error.message });
+  }
+};
+
+// @desc    Report a user
+// @route   POST /api/users/report
+// @access  Private
+const reportUser = async (req, res) => {
+  try {
+    const { reportedUserId, reason, messageIds } = req.body;
+    const reporterId = req.user.id;
+
+    const report = await Report.create({
+      reporter: reporterId,
+      reportedUser: reportedUserId,
+      reason,
+      messages: messageIds || []
+    });
+
+    res.status(201).json({ success: true, message: 'Report submitted successfully', report });
+  } catch (error) {
+    console.error('Error reporting user:', error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
 module.exports = {
   getBarterUsers,
-  updateUserProfile
+  updateUserProfile,
+  blockUser,
+  reportUser
 };

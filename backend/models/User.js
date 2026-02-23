@@ -22,6 +22,9 @@ const userSchema = mongoose.Schema({
   role: { type: String, enum: ['user', 'student', 'admin'], default: 'user' },
 
   location: { type: String, default: 'Earth' },
+  
+  // Array of blocked users
+  blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
 }, { timestamps: true });
 
 // ── Indexes for production query performance ──────────────────────────────────

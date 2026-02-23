@@ -28,7 +28,8 @@ import {
   Star, 
   Flag, 
   Ban, 
-  Trash2
+  Trash2,
+  Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
@@ -77,6 +78,10 @@ const SkillChat = () => {
   const [isBlocked, setIsBlocked] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [disappearingTimer, setDisappearingTimer] = useState(0); // 0 = off, else hours
+  const [hasBlockedMe, setHasBlockedMe] = useState(false);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedMessageIds, setSelectedMessageIds] = useState(new Set());
+  const [dropdownActionLoading, setDropdownActionLoading] = useState(null); // 'mute', 'fav', etc.
   const headerMenuRef = useRef(null);
   
   // Voice recording states
@@ -160,7 +165,7 @@ const SkillChat = () => {
   // Fetch conversations
   const fetchConversations = async () => {
     try {
-      const res = await api.get('/chat/conversations');
+      const res = await api.get('/conversations');
       setConversations(res.data);
     } catch (error) {
       console.error('Error fetching conversations:', error);
@@ -213,7 +218,7 @@ const SkillChat = () => {
     const loadMessages = async () => {
       try {
         console.log('📥 API Request: Fetching messages for user:', userId);
-        const response = await api.get(`/chat/messages/${userId}`);
+        const response = await api.get(`/messages/${userId}`);
         
         console.log('📥 API Response: Received', response.data.length, 'messages');
         
@@ -223,17 +228,30 @@ const SkillChat = () => {
           
           try {
             // Mark messages as read
-            await api.put(`/chat/messages/read/${userId}`);
+            await api.put(`/messages/read/${userId}`);
             console.log('✅ Marked messages as read for user:', userId);
             
             // Update conversations
-            setConversations(prev => 
-              prev.map(conv => 
+            setConversations(prev => {
+              const updated = prev.map(conv => 
                 conv.user._id === userId 
                   ? { ...conv, unreadCount: 0 }
                   : conv
-              )
-            );
+              );
+              return updated;
+            });
+
+            // Sync UI features from conversation data
+            // We use the response from fetchConversations if needed, but since we just clicked it, 
+            // we can find it in the current conversations list
+            const currentConv = conversations.find(c => c.user._id === userId);
+            if (currentConv) {
+              setIsMuted(currentConv.settings?.isMuted || false);
+              setIsFavorite(currentConv.settings?.isFavourite || false);
+              setDisappearingTimer(currentConv.settings?.disappearingTimer || 0);
+              setIsBlocked(currentConv.isBlocked || false);
+              setHasBlockedMe(currentConv.hasBlockedMe || false);
+            }
             
             // Emit socket event to notify sender
             if (socket?.connected) {
@@ -266,16 +284,228 @@ const SkillChat = () => {
       } finally {
         if (!isCancelled) {
           setLoadingMessages(false);
+          // Scroll to bottom after loading messages
+          setTimeout(scrollToBottom, 100);
         }
       }
     };
-    
+
     loadMessages();
-    
+
     return () => {
       isCancelled = true;
     };
-  }, [selectedChat?.user._id, toast, socket]);
+  }, [selectedChat?.user._id]);
+
+  // CHAT ACTIONS HANDLERS
+  const handleToggleMute = async () => {
+    if (!selectedChat || dropdownActionLoading) return;
+    const prevMuted = isMuted;
+    try {
+      setDropdownActionLoading('mute');
+      setIsMuted(!prevMuted); // Optimistic
+      const res = await api.put(`/conversations/${selectedChat.user._id}/mute`);
+      
+      // Sync from server response
+      if (res.data.success && res.data.conversation) {
+        const mySetting = res.data.conversation.settings.find(s => s.userId.toString() === user._id.toString());
+        if (mySetting) setIsMuted(mySetting.isMuted);
+      }
+      
+      toast({ title: !prevMuted ? "Notifications Muted" : "Notifications Unmuted" });
+    } catch (error) {
+      setIsMuted(prevMuted); // Rollback
+      toast({ 
+        title: "Error updating mute status", 
+        description: error.response?.data?.message || error.message,
+        variant: "destructive" 
+      });
+    } finally {
+      setDropdownActionLoading(null);
+      setHeaderMenuOpen(false);
+    }
+  };
+
+  const handleToggleFavourite = async () => {
+    if (!selectedChat || dropdownActionLoading) return;
+    const prevFav = isFavorite;
+    try {
+      setDropdownActionLoading('fav');
+      setIsFavorite(!prevFav); // Optimistic
+      const res = await api.put(`/conversations/${selectedChat.user._id}/favourite`);
+      
+      // Sync from server response
+      if (res.data.success && res.data.conversation) {
+        const mySetting = res.data.conversation.settings.find(s => s.userId.toString() === user._id.toString());
+        if (mySetting) setIsFavorite(mySetting.isFavourite);
+      }
+
+      toast({ title: !prevFav ? "Added to Favourites" : "Removed from Favourites" });
+    } catch (error) {
+      setIsFavorite(prevFav); // Rollback
+      toast({ 
+        title: "Error updating favourite status", 
+        description: error.response?.data?.message || error.message,
+        variant: "destructive" 
+      });
+    } finally {
+      setDropdownActionLoading(null);
+      setHeaderMenuOpen(false);
+    }
+  };
+
+  const handleSetDisappearing = async (timerInHours) => {
+    if (!selectedChat || dropdownActionLoading) return;
+    const prevTimer = disappearingTimer;
+    try {
+      setDropdownActionLoading('disappearing');
+      const timerInSeconds = timerInHours * 3600;
+      setDisappearingTimer(timerInSeconds); // Optimistic
+      const res = await api.put(`/conversations/${selectedChat.user._id}/disappearing`, { timer: timerInSeconds });
+      
+      if (res.data.success && res.data.conversation) {
+        const mySetting = res.data.conversation.settings.find(s => s.userId.toString() === user._id.toString());
+        if (mySetting) setDisappearingTimer(mySetting.disappearingTimer);
+      }
+
+      toast({ title: timerInHours > 0 ? `Disappearing messages set to ${timerInHours}h` : "Disappearing messages disabled" });
+    } catch (error) {
+      setDisappearingTimer(prevTimer); // Rollback
+      toast({ 
+        title: "Error updating disappearing messages", 
+        description: error.response?.data?.message || error.message,
+        variant: "destructive" 
+      });
+    } finally {
+      setDropdownActionLoading(null);
+      setHeaderMenuOpen(false);
+    }
+  };
+
+  const handleBlockUser = async () => {
+    if (!selectedChat || dropdownActionLoading) return;
+    const prevBlocked = isBlocked;
+    const newBlockedState = !prevBlocked;
+    
+    try {
+      setDropdownActionLoading('block');
+      setIsBlocked(newBlockedState); // Optimistic
+      
+      // Update conversations list immediately (Optimistic)
+      setConversations(prev => prev.map(c => 
+        c.user._id === selectedChat.user._id 
+          ? { ...c, isBlocked: newBlockedState } 
+          : c
+      ));
+
+      const res = await api.put(`/users/block/${selectedChat.user._id}`);
+      
+      const confirmedState = res.data.success ? res.data.isBlocked : newBlockedState;
+      setIsBlocked(confirmedState);
+      
+      // Sync confirmed state to conversations list
+      setConversations(prev => prev.map(c => 
+        c.user._id === selectedChat.user._id 
+          ? { ...c, isBlocked: confirmedState } 
+          : c
+      ));
+
+      if (res.data.success) {
+        toast({ title: res.data.message });
+      }
+      setBlockModalOpen(false);
+    } catch (error) {
+      setIsBlocked(prevBlocked); // Rollback
+      setConversations(prev => prev.map(c => 
+        c.user._id === selectedChat.user._id 
+          ? { ...c, isBlocked: prevBlocked } 
+          : c
+      ));
+      toast({ 
+        title: "Error blocking user", 
+        description: error.response?.data?.message || error.message,
+        variant: "destructive" 
+      });
+    } finally {
+      setDropdownActionLoading(null);
+      setHeaderMenuOpen(false);
+    }
+  };
+
+  const handleClearChat = async () => {
+    if (!selectedChat || dropdownActionLoading) return;
+    try {
+      setDropdownActionLoading('clear');
+      // No easy way to rollback unless we deep clone messages, but clear is usually a one-way trip
+      await api.delete(`/messages/conversation/${selectedChat.user._id}`);
+      setMessages([]); 
+      toast({ title: "Chat cleared successfully" });
+      setClearChatModalOpen(false);
+    } catch (error) {
+      toast({ 
+        title: "Error clearing chat", 
+        description: error.response?.data?.message || error.message,
+        variant: "destructive" 
+      });
+    } finally {
+      setDropdownActionLoading(null);
+      setHeaderMenuOpen(false);
+    }
+  };
+
+  const handleDeleteChat = async () => {
+    if (!selectedChat || dropdownActionLoading) return;
+    try {
+      setDropdownActionLoading('delete');
+      const chatToDelete = selectedChat.user._id;
+      await api.delete(`/conversations/${chatToDelete}`);
+      setConversations(prev => prev.filter(c => c.user._id !== chatToDelete));
+      setSelectedChat(null);
+      toast({ title: "Chat deleted", variant: "destructive" });
+      setDeleteChatModalOpen(false);
+    } catch (error) {
+      toast({ 
+        title: "Error deleting chat", 
+        description: error.response?.data?.message || error.message,
+        variant: "destructive" 
+      });
+    } finally {
+      setDropdownActionLoading(null);
+      setHeaderMenuOpen(false);
+    }
+  };
+
+  const handleReportUser = async (reason, blockAndClear) => {
+    if (!selectedChat || dropdownActionLoading) return;
+    try {
+      setDropdownActionLoading('report');
+      const messageIds = messages.slice(-5).map(m => m._id);
+      await api.post('/reports', {
+        reportedUserId: selectedChat.user._id,
+        reason: reason || 'Report from SkillChat',
+        messageIds
+      });
+      toast({ title: "User reported", description: "The admin will review this report." });
+      setReportModalOpen(false);
+      setContactModalOpen(false);
+
+      // If "Block and Clear" was checked, do it now
+      if (blockAndClear) {
+        // We wait for these to complete
+        await handleBlockUser(); 
+        await handleClearChat();
+      }
+    } catch (error) {
+      toast({ 
+        title: "Error reporting user", 
+        description: error.response?.data?.message || error.message,
+        variant: "destructive" 
+      });
+    } finally {
+      setDropdownActionLoading(null);
+      setHeaderMenuOpen(false);
+    }
+  };
 
   // Socket listeners for real-time updates
   useEffect(() => {
@@ -339,7 +569,7 @@ const SkillChat = () => {
         // Mark as read immediately if from other user
         if (message.sender._id === currentChat.user._id && message.receiver._id === user._id) {
           console.log('📖 Marking received message as read');
-          api.put(`/chat/messages/read/${currentChat.user._id}`)
+          api.put(`/messages/read/${currentChat.user._id}`)
             .then(() => {
               if (socket?.connected) {
                 socket.emit('mark-as-read', {
@@ -538,7 +768,7 @@ const SkillChat = () => {
         formData.append('file', files[0]);
       }
 
-      const res = await api.post('/chat/upload', formData);
+      const res = await api.post('/messages/upload', formData);
 
       return res.data.files;
     } catch (error) {
@@ -783,7 +1013,7 @@ const SkillChat = () => {
       setMessages(prev => [...prev, optimisticMessage]);
       setTimeout(scrollToBottom, 50);
       
-      const uploadRes = await api.post('/chat/upload', formData);
+      const uploadRes = await api.post('/messages/upload', formData);
       
       if (!uploadRes.data.files?.length) {
         throw new Error('No file URL received from upload');
@@ -791,7 +1021,7 @@ const SkillChat = () => {
       
       const uploadedFile = uploadRes.data.files[0];
       
-      const messageRes = await api.post('/chat/messages', {
+      const messageRes = await api.post('/messages', {
         receiverId: selectedChat.user._id,
         text: '',
         fileUrl: uploadedFile.url,
@@ -895,7 +1125,7 @@ const SkillChat = () => {
       }
 
       // ✅ API call 
-      const res = await api.post('/chat/messages', {
+      const res = await api.post('/messages', {
         receiverId: selectedChat.user._id,
         text: messageText,
         fileUrl,
@@ -1015,11 +1245,11 @@ const SkillChat = () => {
                 <div className="flex items-center gap-3">
                   <div className="relative">
                     <img
-                      src={conv.user.avatar}
+                      src={(conv.isBlocked || conv.hasBlockedMe) ? 'https://cdn-icons-png.flaticon.com/512/149/149071.png' : conv.user.avatar}
                       alt={conv.user.name}
-                      className="object-cover w-12 h-12 rounded-full"
+                      className="object-cover w-12 h-12 rounded-full grayscale-[0.5]"
                     />
-                    {isOnline(conv.user._id) && (
+                    {isOnline(conv.user._id) && !conv.isBlocked && !conv.hasBlockedMe && (
                       <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 rounded-full border-card"></div>
                     )}
                   </div>
@@ -1070,18 +1300,18 @@ const SkillChat = () => {
               </button>
               <div className="relative">
                 <img
-                  src={selectedChat.user.avatar}
+                  src={(isBlocked || hasBlockedMe) ? 'https://cdn-icons-png.flaticon.com/512/149/149071.png' : selectedChat.user.avatar}
                   alt={selectedChat.user.name}
-                  className="object-cover w-10 h-10 rounded-full"
+                  className="object-cover w-10 h-10 rounded-full grayscale-[0.3]"
                 />
-                {isOnline(selectedChat.user._id) && (
+                {isOnline(selectedChat.user._id) && !isBlocked && !hasBlockedMe && (
                   <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 rounded-full border-card"></div>
                 )}
               </div>
               <div>
                 <h3 className="font-medium text-foreground">{selectedChat.user.name}</h3>
                 <p className="text-xs text-muted-foreground">
-                  {isOnline(selectedChat.user._id) ? 'Online' : 'Offline'}
+                  {(isOnline(selectedChat.user._id) && !isBlocked && !hasBlockedMe) ? 'Online' : 'Offline'}
                 </p>
               </div>
             </div>
@@ -1112,43 +1342,43 @@ const SkillChat = () => {
                     </button>
                     <button 
                       className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-muted transition-colors text-sm text-foreground text-left"
-                      onClick={() => { setHeaderMenuOpen(false); toast({ title: "Select messages mode enabled" }); }}
+                      onClick={() => { setHeaderMenuOpen(false); setSelectionMode(true); setSelectedMessageIds(new Set()); toast({ title: "Select messages mode enabled" }); }}
                     >
                       <CheckSquare className="w-4 h-4 text-muted-foreground" />
                       Select Messages
                     </button>
                     <button 
-                      className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-muted transition-colors text-sm text-foreground text-left"
-                      onClick={() => { 
-                        setHeaderMenuOpen(false); 
-                        setIsMuted(!isMuted);
-                        toast({ title: isMuted ? "Notifications Unmuted" : "Notifications Muted" });
-                      }}
+                      className="w-full px-4 py-2.5 flex items-center justify-between hover:bg-muted transition-colors text-sm text-foreground text-left disabled:opacity-50"
+                      disabled={!!dropdownActionLoading}
+                      onClick={handleToggleMute}
                     >
-                      <BellOff className="w-4 h-4 text-muted-foreground" />
-                      {isMuted ? "Unmute Notifications" : "Mute Notifications"}
+                      <div className="flex items-center gap-3">
+                        <BellOff className="w-4 h-4 text-muted-foreground" />
+                        {isMuted ? "Unmute Notifications" : "Mute Notifications"}
+                      </div>
+                      {dropdownActionLoading === 'mute' && <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />}
                     </button>
                     <button 
-                      className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-muted transition-colors text-sm text-foreground text-left"
-                      onClick={() => { 
-                        setHeaderMenuOpen(false); 
-                        setDisappearingTimer(disappearingTimer === 0 ? 24 : 0);
-                        toast({ title: disappearingTimer === 0 ? "Disappearing messages set to 24h" : "Disappearing messages disabled" });
-                      }}
+                      className="w-full px-4 py-2.5 flex items-center justify-between hover:bg-muted transition-colors text-sm text-foreground text-left disabled:opacity-50"
+                      disabled={!!dropdownActionLoading}
+                      onClick={() => handleSetDisappearing(disappearingTimer === 0 ? 24 : 0)}
                     >
-                      <Timer className="w-4 h-4 text-muted-foreground" />
-                      Disappearing Messages
+                      <div className="flex items-center gap-3">
+                        <Timer className="w-4 h-4 text-muted-foreground" />
+                        Disappearing Messages
+                      </div>
+                      {dropdownActionLoading === 'disappearing' && <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />}
                     </button>
                     <button 
-                      className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-muted transition-colors text-sm text-foreground text-left"
-                      onClick={() => { 
-                        setHeaderMenuOpen(false); 
-                        setIsFavorite(!isFavorite);
-                        toast({ title: isFavorite ? "Removed from Favourites" : "Added to Favourites" });
-                      }}
+                      className="w-full px-4 py-2.5 flex items-center justify-between hover:bg-muted transition-colors text-sm text-foreground text-left disabled:opacity-50"
+                      disabled={!!dropdownActionLoading}
+                      onClick={handleToggleFavourite}
                     >
-                      <Star className="w-4 h-4 shadow-sm text-muted-foreground" />
-                      Add to Favourites
+                      <div className="flex items-center gap-3">
+                        <Star className={cn("w-4 h-4 shadow-sm", isFavorite ? "text-yellow-500 fill-yellow-500" : "text-muted-foreground")} />
+                        {isFavorite ? "Remove from Favourites" : "Add to Favourites"}
+                      </div>
+                      {dropdownActionLoading === 'fav' && <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />}
                     </button>
                     <button 
                       className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-muted transition-colors text-sm text-foreground text-left border-b border-border/50 pb-3 mb-1"
@@ -1166,25 +1396,37 @@ const SkillChat = () => {
                       Report
                     </button>
                     <button 
-                      className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-muted transition-colors text-sm text-foreground text-left"
-                      onClick={() => { setHeaderMenuOpen(false); setBlockModalOpen(true); }}
+                      className="w-full px-4 py-2.5 flex items-center justify-between hover:bg-muted transition-colors text-sm text-foreground text-left disabled:opacity-50"
+                      disabled={!!dropdownActionLoading}
+                      onClick={() => setBlockModalOpen(true)}
                     >
-                      <Ban className="w-4 h-4 text-muted-foreground" />
-                      Block
+                      <div className="flex items-center gap-3">
+                        <Ban className="w-4 h-4 text-muted-foreground" />
+                        {isBlocked ? "Unblock" : "Block"}
+                      </div>
+                      {dropdownActionLoading === 'block' && <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />}
                     </button>
                     <button 
-                      className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-muted transition-colors text-sm text-foreground text-left"
-                      onClick={() => { setHeaderMenuOpen(false); setClearChatModalOpen(true); }}
+                      className="w-full px-4 py-2.5 flex items-center justify-between hover:bg-muted transition-colors text-sm text-foreground text-left disabled:opacity-50"
+                      disabled={!!dropdownActionLoading}
+                      onClick={() => setClearChatModalOpen(true)}
                     >
-                      <Trash2 className="w-4 h-4 text-muted-foreground" />
-                      Clear Chat
+                      <div className="flex items-center gap-3">
+                        <Trash2 className="w-4 h-4 text-muted-foreground" />
+                        Clear Chat
+                      </div>
+                      {dropdownActionLoading === 'clear' && <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />}
                     </button>
                     <button 
-                      className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-muted transition-colors text-sm text-red-500 font-medium text-left group"
-                      onClick={() => { setHeaderMenuOpen(false); setDeleteChatModalOpen(true); }}
+                      className="w-full px-4 py-2.5 flex items-center justify-between hover:bg-muted transition-colors text-sm text-red-500 font-medium text-left group disabled:opacity-50"
+                      disabled={!!dropdownActionLoading}
+                      onClick={() => setDeleteChatModalOpen(true)}
                     >
-                      <AlertCircle className="w-4 h-4 text-red-500 group-hover:scale-110 transition-transform" />
-                      Delete Chat
+                      <div className="flex items-center gap-3">
+                        <AlertCircle className="w-4 h-4 text-red-500 group-hover:scale-110 transition-transform" />
+                        Delete Chat
+                      </div>
+                      {dropdownActionLoading === 'delete' && <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />}
                     </button>
                   </div>
                 )}
@@ -1217,11 +1459,35 @@ const SkillChat = () => {
                   <div
                     key={message._id}
                     className={cn(
-                      "flex gap-2",
-                      isMe ? "justify-end" : "justify-start"
+                      "flex gap-2 group transition-all",
+                      isMe ? "justify-end" : "justify-start",
+                      selectionMode && "cursor-pointer"
                     )}
+                    onClick={() => {
+                      if (selectionMode) {
+                        const newSelection = new Set(selectedMessageIds);
+                        if (newSelection.has(message._id)) {
+                          newSelection.delete(message._id);
+                        } else {
+                          newSelection.add(message._id);
+                        }
+                        setSelectedMessageIds(newSelection);
+                      }
+                    }}
                   >
-                    {!isMe && (
+                    {selectionMode && (
+                      <div className="flex items-center self-center px-2">
+                        <div className={cn(
+                          "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all",
+                          selectedMessageIds.has(message._id) 
+                            ? "bg-primary border-primary" 
+                            : "border-muted-foreground/30"
+                        )}>
+                          {selectedMessageIds.has(message._id) && <Check className="w-3 h-3 text-white" />}
+                        </div>
+                      </div>
+                    )}
+                    {!isMe && !selectionMode && (
                       <img
                         src={message.sender.avatar}
                         alt={message.sender.name}
@@ -1311,6 +1577,64 @@ const SkillChat = () => {
               </div>
             )}
             
+            {/* Selection Mode Bulk Actions */}
+            {selectionMode && selectedMessageIds.size > 0 && (
+              <div className="fixed bottom-[100px] right-20 flex items-center gap-3 z-50 animate-in slide-in-from-bottom-5">
+                <button 
+                  onClick={() => setSelectionMode(false)}
+                  className="px-4 py-2 bg-muted text-foreground rounded-full shadow-lg hover:bg-muted/80 transition-all text-sm font-medium"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={async () => {
+                    try {
+                      const ids = Array.from(selectedMessageIds);
+                      // In a real app, you'd have a bulk delete endpoint
+                      // For now, let's just update local state and toast
+                      setMessages(prev => prev.filter(m => !selectedMessageIds.has(m._id)));
+                      setSelectionMode(false);
+                      setSelectedMessageIds(new Set());
+                      toast({ title: `${ids.length} messages deleted` });
+                    } catch (e) {
+                      toast({ title: "Error deleting messages", variant: "destructive" });
+                    }
+                  }}
+                  className="px-4 py-2 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 transition-all text-sm font-medium flex items-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Delete for me
+                </button>
+              </div>
+            )}
+
+            {/* WhatsApp Style Block/Unblock System Messages */}
+            {isBlocked && (
+              <div className="flex justify-center my-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                <div className="px-5 py-2 rounded-xl bg-orange-100/80 dark:bg-orange-950/40 text-[11px] font-medium text-orange-800 dark:text-orange-200 border border-orange-200/50 dark:border-orange-800/30 shadow-sm flex flex-col items-center gap-1 backdrop-blur-sm max-w-[80%] text-center">
+                  <div className="flex items-center gap-1.5">
+                    <Ban className="w-3.5 h-3.5" />
+                    <span>You blocked this contact. Messages cannot be sent.</span>
+                  </div>
+                  <button 
+                    onClick={() => setBlockModalOpen(true)}
+                    className="text-primary font-bold hover:underline transition-colors mt-0.5"
+                  >
+                    Tap to unblock
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {hasBlockedMe && (
+              <div className="flex justify-center my-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                <div className="px-5 py-2 rounded-xl bg-muted/60 text-[11px] font-medium text-muted-foreground border border-border/50 shadow-sm flex items-center gap-2 backdrop-blur-sm max-w-[80%] text-center">
+                  <AlertCircle className="w-3.5 h-3.5" />
+                  <span>This contact has blocked you. You cannot see their status or send messages.</span>
+                </div>
+              </div>
+            )}
+
             <div ref={messagesEndRef} />
           </div>
 
@@ -1405,7 +1729,7 @@ const SkillChat = () => {
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 className="p-2 transition-colors rounded-lg hover:bg-muted"
-                disabled={uploading || isRecording}
+                disabled={uploading || isRecording || isBlocked || hasBlockedMe}
               >
                 <Paperclip className="w-5 h-5 text-muted-foreground" />
               </button>
@@ -1423,45 +1747,64 @@ const SkillChat = () => {
                 type="button"
                 onClick={() => imageInputRef.current?.click()}
                 className="p-2 transition-colors rounded-lg hover:bg-muted"
-                disabled={uploading || isRecording}
+                disabled={uploading || isRecording || isBlocked || hasBlockedMe}
               >
                 <ImageIcon className="w-5 h-5 text-muted-foreground" />
               </button>
 
               {/* Message Input Field */}
               <div className="relative flex-1">
-                <input
-                  type="text"
-                  value={messageInput}
-                  onChange={handleTyping}
-                  placeholder="Type a message..."
-                  className="w-full pl-4 pr-12 border h-11 bg-muted/50 border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  disabled={sending || uploading || isRecording}
-                />
-                
-                {/* Emoji Picker Button */}
-                <button
-                  type="button"
-                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                  className="absolute -translate-y-1/2 right-3 top-1/2"
-                  disabled={isRecording}
-                >
-                  <Smile className="w-5 h-5 transition-colors text-muted-foreground hover:text-foreground" />
-                </button>
-
-                {/* Emoji Picker */}
-                {showEmojiPicker && (
-                  <div 
-                    ref={emojiPickerRef}
-                    className="absolute right-0 z-50 mb-2 bottom-full"
-                  >
-                    <EmojiPicker 
-                      onEmojiClick={handleEmojiClick}
-                      theme="auto"
-                      width={320}
-                      height={400}
-                    />
+                {isBlocked ? (
+                  <div className="w-full h-11 bg-muted/30 border border-border rounded-xl flex items-center justify-center gap-2 text-sm text-muted-foreground transition-all animate-in fade-in slide-in-from-bottom-2">
+                    <span>You blocked this contact.</span>
+                    <button 
+                      type="button" 
+                      onClick={() => setBlockModalOpen(true)}
+                      className="text-primary font-medium hover:underline px-2 py-1 rounded hover:bg-primary/5 transition-colors"
+                    >
+                      Unblock
+                    </button>
                   </div>
+                ) : hasBlockedMe ? (
+                   <div className="w-full h-11 bg-muted/30 border border-border rounded-xl flex items-center justify-center text-sm text-muted-foreground italic transition-all animate-in fade-in slide-in-from-bottom-2">
+                    This contact has blocked you
+                  </div>
+                ) : (
+                  <>
+                    <input
+                      type="text"
+                      value={messageInput}
+                      onChange={handleTyping}
+                      placeholder="Type a message..."
+                      className="w-full pl-4 pr-12 border h-11 bg-muted/50 border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                      disabled={sending || uploading || isRecording}
+                    />
+                    
+                    {/* Emoji Picker Button */}
+                    <button
+                      type="button"
+                      onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                      className="absolute -translate-y-1/2 right-3 top-1/2"
+                      disabled={isRecording}
+                    >
+                      <Smile className="w-5 h-5 transition-colors text-muted-foreground hover:text-foreground" />
+                    </button>
+
+                    {/* Emoji Picker */}
+                    {showEmojiPicker && (
+                      <div 
+                        ref={emojiPickerRef}
+                        className="absolute right-0 z-50 mb-2 bottom-full"
+                      >
+                        <EmojiPicker 
+                          onEmojiClick={handleEmojiClick}
+                          theme="auto"
+                          width={320}
+                          height={400}
+                        />
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -1473,7 +1816,7 @@ const SkillChat = () => {
                   "p-2 rounded-lg transition-colors",
                   isRecording ? "bg-destructive text-white animate-pulse" : "hover:bg-muted"
                 )}
-                disabled={sending || uploading}
+                disabled={sending || uploading || isBlocked || hasBlockedMe}
               >
                 <Mic className="w-5 h-5" />
               </button>
@@ -1481,10 +1824,10 @@ const SkillChat = () => {
               {/* Send Button */}
               <button
                 type="submit"
-                disabled={(!messageInput.trim() && selectedFiles.length === 0) || sending || uploading || isRecording}
+                disabled={(!messageInput.trim() && selectedFiles.length === 0) || sending || uploading || isRecording || isBlocked || hasBlockedMe}
                 className={cn(
                   "p-2.5 rounded-xl gradient-primary text-primary-foreground shadow-md hover:shadow-lg transition-all",
-                  ((!messageInput.trim() && selectedFiles.length === 0) || sending || uploading || isRecording) && "opacity-50 cursor-not-allowed"
+                  ((!messageInput.trim() && selectedFiles.length === 0) || sending || uploading || isRecording || isBlocked || hasBlockedMe) && "opacity-50 cursor-not-allowed"
                 )}
               >
                 <Send className="w-5 h-5" />
@@ -1572,21 +1915,29 @@ const SkillChat = () => {
           <div className="bg-card w-full max-w-sm rounded-2xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
             <div className="bg-muted p-8 flex flex-col items-center justify-center relative">
               <button className="absolute top-4 right-4 text-muted-foreground hover:text-foreground" onClick={() => setContactModalOpen(false)}><X className="w-5 h-5" /></button>
-              <img src={selectedChat?.user?.avatar} alt={selectedChat?.user?.name} className="w-24 h-24 rounded-full object-cover border-4 border-card shadow-lg" />
+              <img src={(isBlocked || hasBlockedMe) ? 'https://cdn-icons-png.flaticon.com/512/149/149071.png' : selectedChat?.user?.avatar} alt={selectedChat?.user?.name} className="w-24 h-24 rounded-full object-cover border-4 border-card shadow-lg grayscale-[0.2]" />
               <h2 className="mt-4 text-xl font-semibold text-foreground">{selectedChat?.user?.name}</h2>
-              <p className="text-sm text-muted-foreground">{isOnline(selectedChat?.user?._id) ? 'Online' : 'Offline'}</p>
+              <p className="text-sm text-muted-foreground">{(isOnline(selectedChat?.user?._id) && !isBlocked && !hasBlockedMe) ? 'Online' : 'Offline'}</p>
             </div>
             <div className="p-4 space-y-4">
               <div className="bg-muted/50 p-4 rounded-xl">
                 <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">About</p>
-                <p className="text-sm text-foreground">Using Skillfinix for collaboration & learning.</p>
+                <p className="text-sm text-foreground">
+                  {(isBlocked || hasBlockedMe) ? 'Status unavailable' : 'Using Skillfinix for collaboration & learning.'}
+                </p>
               </div>
               <div className="bg-muted/50 rounded-xl overflow-hidden">
-                <button className="w-full text-left px-4 py-3 text-sm text-foreground hover:bg-muted transition-colors flex justify-between items-center border-b border-border/50">
-                  <span>Block contact</span>
+                <button 
+                  className="w-full text-left px-4 py-3 text-sm text-foreground hover:bg-muted transition-colors flex justify-between items-center border-b border-border/50"
+                  onClick={() => { setContactModalOpen(false); setBlockModalOpen(true); }}
+                >
+                  <span>{isBlocked ? "Unblock contact" : "Block contact"}</span>
                   <Ban className="w-4 h-4 text-red-500" />
                 </button>
-                <button className="w-full text-left px-4 py-3 text-sm text-red-500 hover:bg-muted transition-colors flex justify-between items-center">
+                <button 
+                  className="w-full text-left px-4 py-3 text-sm text-red-500 hover:bg-muted transition-colors flex justify-between items-center"
+                  onClick={() => { setContactModalOpen(false); setReportModalOpen(true); }}
+                >
                   <span>Report contact</span>
                   <Flag className="w-4 h-4" />
                 </button>
@@ -1601,14 +1952,42 @@ const SkillChat = () => {
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 animate-in fade-in duration-200" onClick={() => setReportModalOpen(false)}>
           <div className="bg-card w-full max-w-sm p-6 rounded-2xl shadow-xl animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-medium text-foreground mb-4">Report {selectedChat?.user?.name}?</h3>
-            <p className="text-sm text-muted-foreground mb-6">The last 5 messages from this contact will be forwarded to the admin. This contact will not be notified.</p>
-            <div className="flex items-center gap-2 mb-6">
-              <input type="checkbox" id="block-and-report" className="w-4 h-4 rounded text-primary focus:ring-primary/20 accent-primary" />
-              <label htmlFor="block-and-report" className="text-sm text-foreground">Block contact and clear chat</label>
+            <p className="text-sm text-muted-foreground mb-4">The last 5 messages from this contact will be forwarded to Skillfinix. This contact will not be notified.</p>
+            
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground uppercase mb-1 block">Reason for report</label>
+                <select 
+                  id="report-reason"
+                  className="w-full bg-muted/50 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                >
+                  <option value="Spam">Spam</option>
+                  <option value="Abuse">Abuse or Harassment</option>
+                  <option value="Inappropriate">Inappropriate Content</option>
+                  <option value="Scam">Scam or Fraud</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg border border-border/50">
+                <input type="checkbox" id="block-and-report" className="w-4 h-4 rounded text-primary focus:ring-primary/20 accent-primary cursor-pointer" />
+                <label htmlFor="block-and-report" className="text-sm text-foreground cursor-pointer select-none">Block contact and clear chat</label>
+              </div>
             </div>
+
             <div className="flex justify-end gap-3 font-medium">
               <button className="px-4 py-2 text-primary hover:bg-muted rounded-lg transition-colors" onClick={() => setReportModalOpen(false)}>Cancel</button>
-              <button className="px-5 py-2 bg-primary text-primary-foreground rounded-lg transition-all hover:bg-primary/90 hover:shadow-md" onClick={() => { setReportModalOpen(false); toast({ title: "Contact reported", description: "Thanks for keeping our community safe." }); }}>Report</button>
+              <button 
+                className="px-5 py-2 bg-primary text-primary-foreground rounded-lg transition-all hover:bg-primary/90 hover:shadow-md disabled:opacity-50"
+                disabled={dropdownActionLoading === 'report'}
+                onClick={() => {
+                  const reason = document.getElementById('report-reason')?.value;
+                  const block = document.getElementById('block-and-report')?.checked;
+                  handleReportUser(reason, block);
+                }}
+              >
+                Report
+              </button>
             </div>
           </div>
         </div>,
@@ -1622,7 +2001,7 @@ const SkillChat = () => {
             <p className="text-sm text-muted-foreground mb-6">Blocked contacts will no longer be able to call you or send you messages.</p>
             <div className="flex justify-end gap-3 font-medium">
               <button className="px-4 py-2 text-primary hover:bg-muted rounded-lg transition-colors" onClick={() => setBlockModalOpen(false)}>Cancel</button>
-              <button className="px-5 py-2 bg-primary text-primary-foreground rounded-lg transition-all hover:bg-primary/90 hover:shadow-md" onClick={() => { setBlockModalOpen(false); setIsBlocked(!isBlocked); toast({ title: isBlocked ? "Unblocked successfully" : "Blocked successfully", variant: isBlocked ? "default" : "destructive" }); }}>{isBlocked ? "Unblock" : "Block"}</button>
+              <button className="px-5 py-2 bg-primary text-primary-foreground rounded-lg transition-all hover:bg-primary/90 hover:shadow-md" onClick={handleBlockUser}>{isBlocked ? "Unblock" : "Block"}</button>
             </div>
           </div>
         </div>,
@@ -1640,7 +2019,7 @@ const SkillChat = () => {
             </div>
             <div className="flex justify-end gap-3 font-medium">
               <button className="px-4 py-2 text-primary hover:bg-muted rounded-lg transition-colors" onClick={() => setClearChatModalOpen(false)}>Cancel</button>
-              <button className="px-5 py-2 bg-red-500 text-white rounded-lg transition-all hover:bg-red-600 hover:shadow-md" onClick={() => { setClearChatModalOpen(false); setMessages([]); toast({ title: "Chat cleared successfully" }); }}>Clear chat</button>
+              <button className="px-5 py-2 bg-red-500 text-white rounded-lg transition-all hover:bg-red-600 hover:shadow-md" onClick={handleClearChat}>Clear chat</button>
             </div>
           </div>
         </div>,
@@ -1654,7 +2033,7 @@ const SkillChat = () => {
             <p className="text-sm text-muted-foreground mb-6">This chat will be completely removed from your history.</p>
             <div className="flex justify-end gap-3 font-medium">
               <button className="px-4 py-2 text-primary hover:bg-muted rounded-lg transition-colors" onClick={() => setDeleteChatModalOpen(false)}>Cancel</button>
-              <button className="px-5 py-2 bg-red-500 text-white rounded-lg transition-all hover:bg-red-600 hover:shadow-md" onClick={() => { setDeleteChatModalOpen(false); setConversations(prev => prev.filter(c => c.user._id !== selectedChat.user._id)); setSelectedChat(null); toast({ title: "Chat deleted", variant: "destructive" }); }}>Delete chat</button>
+              <button className="px-5 py-2 bg-red-500 text-white rounded-lg transition-all hover:bg-red-600 hover:shadow-md" onClick={handleDeleteChat}>Delete chat</button>
             </div>
           </div>
         </div>,

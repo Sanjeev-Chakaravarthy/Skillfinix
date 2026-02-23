@@ -1,5 +1,6 @@
 const Message = require('../models/Message');
 const User = require('../models/User');
+const Conversation = require('../models/Conversation');
 
 // @desc    Get all conversations for a user
 // @route   GET /api/chat/conversations
@@ -48,14 +49,33 @@ const getConversations = async (req, res) => {
       }
     ]);
 
-    // Populate user details
+    // Populate user details and settings
     const conversations = await Promise.all(
       messages.map(async (conv) => {
-        const user = await User.findById(conv._id).select('-password');
+        const otherUser = await User.findById(conv._id).select('-password');
+        if (!otherUser) return null;
+
+        const conversation = await Conversation.findOne({
+          participants: { $all: [userId, conv._id] }
+        });
+
+        const myUser = await User.findById(userId);
+        const isBlocked = (myUser?.blockedUsers || []).some(id => id && id.toString() === conv._id.toString());
+        const hasBlockedMe = (otherUser?.blockedUsers || []).some(id => id && id.toString() === userId.toString());
+
+        const mySettings = conversation?.settings?.find(s => s.userId.toString() === userId.toString()) || {};
+
         return {
-          user,
+          user: otherUser,
           lastMessage: conv.lastMessage,
-          unreadCount: conv.unreadCount
+          unreadCount: conv.unreadCount,
+          settings: {
+            isMuted: mySettings.isMuted || false,
+            isFavourite: mySettings.isFavourite || false,
+            disappearingTimer: mySettings.disappearingTimer || 0
+          },
+          isBlocked,
+          hasBlockedMe
         };
       })
     );
@@ -147,6 +167,32 @@ const sendMessage = async (req, res) => {
       return res.status(404).json({ message: 'Receiver not found' });
     }
 
+    // CHECK IF BLOCKED
+    const sender = await User.findById(req.user._id);
+    const isSenderBlocking = (sender.blockedUsers || []).some(id => id && id.toString() === receiverId.toString());
+    const isReceiverBlocking = (receiver.blockedUsers || []).some(id => id && id.toString() === req.user._id.toString());
+
+    if (isSenderBlocking) {
+      return res.status(403).json({ message: 'You have blocked this user' });
+    }
+    if (isReceiverBlocking) {
+      return res.status(403).json({ message: 'This user has blocked you' });
+    }
+
+    // CHECK DISAPPEARING MESSAGES
+    let expiresAt = null;
+    const conversation = await Conversation.findOne({
+      participants: { $all: [req.user._id, receiverId] }
+    });
+    
+    if (conversation) {
+      // Find setting for this user (or just use common timer if we enforce symmetry)
+      const setting = conversation.settings.find(s => s.userId.toString() === req.user._id.toString());
+      if (setting && setting.disappearingTimer > 0) {
+        expiresAt = new Date(Date.now() + setting.disappearingTimer * 1000);
+      }
+    }
+
     // ✅ Check if receiver is online
     const connectedUsers = req.app.get('connectedUsers');
     const isReceiverOnline = connectedUsers && connectedUsers.has(receiverId.toString());
@@ -170,6 +216,10 @@ const sendMessage = async (req, res) => {
 
     if (fileUrl) {
       messageData.fileUrl = fileUrl;
+    }
+
+    if (expiresAt) {
+      messageData.expiresAt = expiresAt;
     }
 
     const message = await Message.create(messageData);
@@ -309,11 +359,187 @@ const uploadFiles = async (req, res) => {
   }
 };
 
+// @desc    Mute conversation
+// @route   PUT /api/chat/conversations/:id/mute
+const muteConversation = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const otherUserId = req.params.id;
+
+    let conversation = await Conversation.findOne({
+      participants: { $all: [userId, otherUserId] }
+    });
+
+    if (!conversation) {
+      conversation = await Conversation.create({
+        participants: [userId, otherUserId],
+        settings: [
+          { userId: userId, isMuted: true },
+          { userId: otherUserId, isMuted: false }
+        ]
+      });
+    } else {
+      // PERMISSION CHECK
+      if (!conversation.participants.some(p => p.toString() === userId.toString())) {
+        return res.status(403).json({ message: 'Not authorized' });
+      }
+
+      let userSetting = conversation.settings.find(s => s.userId.toString() === userId.toString());
+      if (userSetting) {
+        userSetting.isMuted = !userSetting.isMuted;
+      } else {
+        conversation.settings.push({ userId: userId, isMuted: true });
+      }
+      await conversation.save();
+    }
+
+    res.status(200).json({ success: true, conversation });
+  } catch (error) {
+    console.error('Mute error:', error);
+    res.status(500).json({ message: 'Error updating mute status', error: error.message });
+  }
+};
+
+// @desc    Favourite conversation
+// @route   PUT /api/chat/conversations/:id/favourite
+const favouriteConversation = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const otherUserId = req.params.id;
+
+    let conversation = await Conversation.findOne({
+      participants: { $all: [userId, otherUserId] }
+    });
+
+    if (!conversation) {
+      conversation = await Conversation.create({
+        participants: [userId, otherUserId],
+        settings: [
+          { userId: userId, isFavourite: true },
+          { userId: otherUserId, isFavourite: false }
+        ]
+      });
+    } else {
+      // PERMISSION CHECK
+      if (!conversation.participants.some(p => p.toString() === userId.toString())) {
+        return res.status(403).json({ message: 'Not authorized' });
+      }
+
+      let userSetting = conversation.settings.find(s => s.userId.toString() === userId.toString());
+      if (userSetting) {
+        userSetting.isFavourite = !userSetting.isFavourite;
+      } else {
+        conversation.settings.push({ userId: userId, isFavourite: true });
+      }
+      await conversation.save();
+    }
+
+    res.status(200).json({ success: true, conversation });
+  } catch (error) {
+    console.error('Favourite error:', error);
+    res.status(500).json({ message: 'Error updating favourite status', error: error.message });
+  }
+};
+
+// @desc    Set disappearing timer
+// @route   PUT /api/chat/conversations/:id/disappearing
+const setDisappearingTimer = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const otherUserId = req.params.id;
+    const { timer } = req.body; // in seconds
+
+    let conversation = await Conversation.findOne({
+      participants: { $all: [userId, otherUserId] }
+    });
+
+    if (!conversation) {
+      conversation = await Conversation.create({
+        participants: [userId, otherUserId],
+        settings: [
+          { userId: userId, disappearingTimer: timer },
+          { userId: otherUserId, disappearingTimer: timer }
+        ]
+      });
+    } else {
+      // PERMISSION CHECK
+      if (!conversation.participants.some(p => p.toString() === userId.toString())) {
+        return res.status(403).json({ message: 'Not authorized' });
+      }
+
+      conversation.settings.forEach(s => {
+        s.disappearingTimer = timer;
+      });
+      if (!conversation.settings.find(s => s.userId.toString() === userId.toString())) {
+        conversation.settings.push({ userId, disappearingTimer: timer });
+      }
+      await conversation.save();
+    }
+
+    res.json({ success: true, conversation, timer });
+  } catch (error) {
+    console.error('Disappearing error:', error);
+    res.status(500).json({ message: 'Error updating disappearing timer', error: error.message });
+  }
+};
+
+// @desc    Clear chat messages
+// @route   DELETE /api/chat/messages/conversation/:id
+const clearChat = async (req, res) => {
+  try {
+    const currentUserId = req.user._id;
+    const otherUserId = req.params.id;
+
+    // Delete all messages between the two users
+    await Message.deleteMany({
+      $or: [
+        { sender: currentUserId, receiver: otherUserId },
+        { sender: otherUserId, receiver: currentUserId }
+      ]
+    });
+
+    res.json({ success: true, message: 'Chat cleared successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Delete entire chat
+// @route   DELETE /api/chat/conversations/:id
+const deleteChat = async (req, res) => {
+  try {
+    const currentUserId = req.user._id;
+    const otherUserId = req.params.id;
+
+    // Delete all messages
+    await Message.deleteMany({
+      $or: [
+        { sender: currentUserId, receiver: otherUserId },
+        { sender: otherUserId, receiver: currentUserId }
+      ]
+    });
+
+    // Delete the conversation document
+    await Conversation.findOneAndDelete({
+      participants: { $all: [currentUserId, otherUserId] }
+    });
+
+    res.json({ success: true, message: 'Chat deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getConversations,
   getMessages,
   sendMessage,
   markAsRead,
   getUnreadCount,
-  uploadFiles
+  uploadFiles,
+  muteConversation,
+  favouriteConversation,
+  setDisappearingTimer,
+  clearChat,
+  deleteChat
 };

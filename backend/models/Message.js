@@ -38,6 +38,10 @@ const messageSchema = new mongoose.Schema(
     },
     readAt: {
       type: Date
+    },
+    // ✅ NEW: For disappearing messages
+    expiresAt: {
+      type: Date
     }
   },
   {
