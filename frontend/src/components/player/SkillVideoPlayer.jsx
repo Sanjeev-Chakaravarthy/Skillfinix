@@ -230,7 +230,7 @@ const SkillVideoPlayer = ({ course, loading, error, className }) => {
       onMouseLeave={() => { if (videoRef.current && !videoRef.current.paused) setShowControls(false); }}
       className={cn(
         "relative w-full rounded-2xl overflow-hidden shadow-2xl bg-black group flex flex-col font-sans",
-        isTheaterMode ? "fixed inset-0 z-50 rounded-none w-screen h-screen align-center justify-center p-0 m-0" : "",
+        isTheaterMode ? "fixed inset-0 z-50 rounded-none w-full h-screen align-center justify-center p-0 m-0" : "",
         isFullscreen && "rounded-none border-none",
         className
       )}

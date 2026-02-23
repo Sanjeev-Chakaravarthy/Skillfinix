@@ -872,10 +872,10 @@ const SkillChat = () => {
   }
 
   return (
-    <div className="flex h-[calc(100vh-80px)] bg-background rounded-2xl border border-border overflow-hidden">
+    <div className="flex h-full min-w-0 bg-background rounded-2xl border border-border overflow-hidden">
       {/* Conversations List */}
       <div className={cn(
-        "w-full md:w-80 border-r border-border flex flex-col bg-card",
+        "w-full md:w-80 shrink-0 border-r border-border flex flex-col bg-card",
         selectedChat && "hidden md:flex"
       )}>
         {/* Header */}

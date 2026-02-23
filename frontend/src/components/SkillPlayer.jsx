@@ -258,7 +258,7 @@ const SkillPlayer = ({ course, loading, error, className }) => {
       onMouseLeave={() => playing && setShowControls(false)}
       className={cn(
         "relative w-full rounded-2xl overflow-hidden shadow-2xl bg-black border border-border/40 group flex flex-col",
-        isDeepLearnMode ? "fixed inset-0 z-50 rounded-none w-screen h-screen align-center justify-center bg-black" : "aspect-video",
+        isDeepLearnMode ? "fixed inset-0 z-50 rounded-none w-full h-screen align-center justify-center bg-black" : "aspect-video",
         isFullscreen && "rounded-none border-none",
         className
       )}
