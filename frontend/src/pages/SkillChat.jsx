@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import {
   Search,
   Send,
@@ -101,10 +102,12 @@ const SkillChat = () => {
 
     if (previewOpen) {
       window.addEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = "hidden";
     }
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = "unset";
     };
   }, [previewOpen]);
 
@@ -1372,14 +1375,14 @@ const SkillChat = () => {
         </div>
       )}
 
-      {/* Internal Modal Lightbox */}
-      {previewOpen && previewImages.length > 0 && (
+      {/* Internal Modal Lightbox - Rendered via Portal for true fullscreen takeover */}
+      {previewOpen && previewImages.length > 0 && createPortal(
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 cursor-pointer animate-in fade-in duration-200"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black cursor-pointer animate-in fade-in zoom-in-95 duration-200"
           onClick={() => setPreviewOpen(false)}
         >
           <button
-            className="absolute p-2 text-3xl text-white transition-opacity top-4 right-6 hover:opacity-75 z-10"
+            className="absolute p-2 text-3xl text-white transition-opacity top-4 right-6 hover:opacity-75 z-[10000]"
             onClick={(e) => {
               e.stopPropagation();
               setPreviewOpen(false);
@@ -1390,7 +1393,7 @@ const SkillChat = () => {
           
           {previewImages.length > 1 && (
             <button
-              className="absolute p-4 text-4xl text-white transition-opacity left-4 hover:opacity-75 z-10"
+              className="absolute p-4 text-4xl text-white transition-opacity left-4 hover:opacity-75 z-[10000]"
               onClick={(e) => {
                 e.stopPropagation();
                 setPreviewIndex(i => i > 0 ? i - 1 : i);
@@ -1400,17 +1403,17 @@ const SkillChat = () => {
             </button>
           )}
 
-          <div className="relative max-h-[85vh] max-w-[90vw] flex items-center justify-center p-4">
+          <div className="relative max-h-screen max-w-full flex items-center justify-center p-4">
             <img
               src={previewImages[previewIndex].url}
-              className="max-h-[85vh] max-w-[90vw] rounded-lg shadow-2xl object-contain cursor-default"
+              className="max-h-[95vh] max-w-[95vw] rounded-sm shadow-2xl object-contain cursor-default select-none"
               onClick={(e) => e.stopPropagation()}
             />
           </div>
 
           {previewImages.length > 1 && (
             <button
-              className="absolute p-4 text-4xl text-white transition-opacity right-4 hover:opacity-75 z-10"
+              className="absolute p-4 text-4xl text-white transition-opacity right-4 hover:opacity-75 z-[10000]"
               onClick={(e) => {
                 e.stopPropagation();
                 setPreviewIndex(i => i < previewImages.length - 1 ? i + 1 : i);
@@ -1419,7 +1422,8 @@ const SkillChat = () => {
               ›
             </button>
           )}
-        </div>
+        </div>,
+        document.getElementById("modal-root")
       )}
     </div>
   );
