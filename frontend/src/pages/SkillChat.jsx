@@ -1351,7 +1351,7 @@ const AttachmentPreview = ({ attachment, isMe }) => {
         <img 
           src={attachment.url} 
           alt="Attachment" 
-          className="max-w-full transition-opacity rounded-lg cursor-pointer hover:opacity-90"
+          className="max-w-full transition-opacity rounded-xl cursor-pointer hover:opacity-90 border border-border/50 shadow-sm"
           style={{ maxHeight: '300px' }}
         />
       </a>
@@ -1360,29 +1360,33 @@ const AttachmentPreview = ({ attachment, isMe }) => {
 
   if (attachment.type === 'video') {
     return (
-      <video 
-        src={attachment.url} 
-        controls 
-        className="max-w-full rounded-lg"
-        style={{ maxHeight: '300px' }}
-      />
+      <div className="relative overflow-hidden rounded-xl border border-border/50 bg-black shadow-sm">
+        <video 
+          src={attachment.url} 
+          controls 
+          className="max-w-full max-h-[300px] object-contain"
+        />
+      </div>
     );
   }
 
   if (attachment.type === 'audio') {
     return (
       <div className={cn(
-        "flex items-center gap-2 p-2 rounded-lg min-w-[200px]",
-        isMe ? "bg-primary-foreground/10" : "bg-background"
+        "flex items-center gap-3 p-3 rounded-xl min-w-[240px] shadow-sm",
+        isMe ? "bg-primary text-primary-foreground" : "bg-card border border-border text-foreground"
       )}>
         <button
           onClick={handlePlayPause}
-          className="p-2 transition-colors rounded-full hover:bg-muted/50"
+          className={cn(
+            "p-3 rounded-full flex shrink-0 transition-transform active:scale-95",
+            isMe ? "bg-white/20 hover:bg-white/30 text-white" : "bg-primary/10 hover:bg-primary/20 text-primary"
+          )}
         >
           {isPlaying ? (
-            <Pause className="w-4 h-4" />
+            <Pause className="w-5 h-5" fill="currentColor" />
           ) : (
-            <Play className="w-4 h-4" />
+            <Play className="w-5 h-5 ml-0.5" fill="currentColor" />
           )}
         </button>
         <audio 
@@ -1391,36 +1395,67 @@ const AttachmentPreview = ({ attachment, isMe }) => {
           onEnded={() => setIsPlaying(false)} 
           onPause={() => setIsPlaying(false)}
           onPlay={() => setIsPlaying(true)}
+          className="hidden"
         />
-        <div className="flex items-center flex-1 gap-2">
-          <Volume2 className="w-4 h-4" />
-          <div className="flex-1 h-1 rounded-full bg-muted">
-            <div className="h-full rounded-full bg-primary" style={{ width: '0%' }}></div>
-          </div>
+        <div className="flex items-center flex-1 gap-1">
+          {/* Fake waveform for WhatsApp style */}
+          {[2, 4, 3, 5, 2, 6, 3, 4, 2, 5].map((h, i) => (
+            <div 
+              key={i} 
+              className={cn(
+                "w-1 rounded-full transition-all duration-200",
+                isPlaying ? "animate-pulse" : "opacity-70",
+                isMe ? "bg-primary-foreground" : "bg-primary"
+              )} 
+              style={{ height: `${h * 4}px`, opacity: isPlaying ? Math.random() * 0.5 + 0.5 : 0.4 }}
+            />
+          ))}
+          <div className="flex-1" />
         </div>
-        <span className="text-xs">Voice</span>
+        {attachment.size && (
+          <span className="text-[10px] opacity-70 ml-2">
+            {(attachment.size / 1024 / 1024).toFixed(1)}MB
+          </span>
+        )}
       </div>
     );
   }
 
-  // Generic file
+  // Generic document or file
   return (
-    <a
-      href={attachment.url}
-      download
-      target="_blank"
-      rel="noopener noreferrer"
-      className={cn(
-        "flex items-center gap-2 p-2 rounded-lg hover:opacity-80 transition-opacity",
-        isMe ? "bg-primary-foreground/10" : "bg-background"
-      )}
-    >
-      <File className="w-4 h-4" />
-      <span className="text-xs truncate max-w-[200px]">
-        {attachment.filename || 'File'}
-      </span>
-      <Download className="w-4 h-4 ml-auto" />
-    </a>
+    <div className={cn(
+      "flex items-center gap-3 p-3 rounded-xl shadow-sm border",
+      isMe ? "bg-primary/10 border-primary/20 text-foreground" : "bg-card border-border text-foreground"
+    )}>
+      <div className={cn(
+        "p-2.5 rounded-lg flex shrink-0",
+        isMe ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+      )}>
+        <File className="w-5 h-5" />
+      </div>
+      <div className="flex flex-col flex-1 min-w-0">
+        <span className="text-sm font-medium truncate max-w-[180px]">
+          {attachment.filename || 'Document File'}
+        </span>
+        {attachment.size && (
+          <span className="text-[10px] text-muted-foreground mt-0.5">
+            {(attachment.size / 1024).toFixed(0)} KB • {attachment.filename?.split('.').pop()?.toUpperCase()}
+          </span>
+        )}
+      </div>
+      <a
+        href={attachment.url}
+        download
+        target="_blank"
+        rel="noopener noreferrer"
+        className={cn(
+          "w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors",
+          isMe ? "bg-primary text-primary-foreground hover:bg-primary/90" : "bg-muted hover:bg-muted/80 text-foreground"
+        )}
+      >
+        <Download className="w-4 h-4" />
+      </a>
+    </div>
   );
 };
 
