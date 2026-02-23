@@ -29,7 +29,7 @@ router.put('/messages/read/:userId', markAsRead);
 // Get unread message count
 router.get('/unread-count', getUnreadCount);
 
-// Upload files (images, videos, audio, documents) - up to 10 files
-router.post('/upload', chatFileUpload.array('files', 10), uploadFiles);
+// Upload file (images, videos, audio, documents) - strictly one per payload
+router.post('/upload', chatFileUpload.single('file'), uploadFiles);
 
 module.exports = router;

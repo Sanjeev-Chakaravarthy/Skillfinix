@@ -445,9 +445,9 @@ const SkillChat = () => {
     try {
       setUploading(true);
       const formData = new FormData();
-      files.forEach(file => {
-        formData.append('files', file);
-      });
+      if (files.length > 0) {
+        formData.append('file', files[0]);
+      }
 
       const res = await api.post('/chat/upload', formData);
 
@@ -664,7 +664,7 @@ const SkillChat = () => {
       else if (audioBlob.type.includes('mpeg')) extension = 'mp3';
       
       const filename = `voice_${Date.now()}.${extension}`;
-      formData.append('files', audioBlob, filename);
+      formData.append('file', audioBlob, filename);
       
       const uploadRes = await api.post('/chat/upload', formData);
       

@@ -283,31 +283,28 @@ const getUnreadCount = async (req, res) => {
 const uploadFiles = async (req, res) => {
   try {
     console.log('📤 File upload request received');
-    console.log('Files:', req.files?.length || 0);
     
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ message: 'No files uploaded' });
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    // Process uploaded files
-    const files = req.files.map(file => {
-      console.log('Processing file:', file.originalname, file.mimetype);
-      
-      return {
-        filename: file.originalname,
-        url: file.path, // Cloudinary URL
-        type: file.mimetype.startsWith('image/') ? 'image' 
-            : file.mimetype.startsWith('video/') ? 'video'
-            : file.mimetype.startsWith('audio/') ? 'audio'
-            : 'file',
-        size: file.size
-      };
-    });
+    const file = req.file;
+    console.log('Processing file:', file.originalname, file.mimetype);
+    
+    const fileData = {
+      filename: file.originalname,
+      url: file.path, // Cloudinary URL automatically bound
+      type: file.mimetype.startsWith('image/') ? 'image' 
+          : file.mimetype.startsWith('video/') ? 'video'
+          : file.mimetype.startsWith('audio/') ? 'audio'
+          : 'file',
+      size: file.size
+    };
 
-    console.log('✅ Files processed:', files.length);
-    res.json({ files });
+    console.log('✅ File processed');
+    res.json({ files: [fileData] }); // keep legacy array format for seamless frontend fallback
   } catch (error) {
-    console.error('Error uploading files:', error);
+    console.error('Error uploading file:', error);
     res.status(500).json({ message: error.message });
   }
 };
