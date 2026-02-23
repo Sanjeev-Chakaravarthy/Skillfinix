@@ -6,7 +6,12 @@ const {
   sendMessage,
   markAsRead,
   getUnreadCount,
-  uploadFiles
+  uploadFiles,
+  muteConversation,
+  favouriteConversation,
+  setDisappearingTimer,
+  clearChat,
+  deleteChat
 } = require('../controllers/chatController');
 const { protect } = require('../middleware/authMiddleware');
 const { chatFileUpload } = require('../config/cloudinary');
@@ -29,7 +34,14 @@ router.put('/messages/read/:userId', markAsRead);
 // Get unread message count
 router.get('/unread-count', getUnreadCount);
 
-// Upload files (images, videos, audio, documents) - up to 10 files
-router.post('/upload', chatFileUpload.array('files', 10), uploadFiles);
+// Upload file (images, videos, audio, documents) - strictly one per payload
+router.post('/upload', chatFileUpload.single('file'), uploadFiles);
+
+// New WhatsApp style features
+router.put('/conversations/:id/mute', muteConversation);
+router.put('/conversations/:id/favourite', favouriteConversation);
+router.put('/conversations/:id/disappearing', setDisappearingTimer);
+router.delete('/messages/conversation/:id', clearChat);
+router.delete('/conversations/:id', deleteChat);
 
 module.exports = router;

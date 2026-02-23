@@ -128,13 +128,58 @@
     @apply border-border;
   }
 
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+
   html {
     scroll-behavior: smooth;
+  }
+
+  /* Core Layout Engine (Forcing Flex Constriction) */
+  .app-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+    width: 100%;
+  }
+
+  .layout-wrapper {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .sidebar {
+    width: 260px;
+    min-width: 260px;
+    max-width: 260px;
+    flex-shrink: 0;
+  }
+
+  .main-content {
+    flex: 1;
+    min-width: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    overscroll-behavior: none;
+    width: 100%;
   }
 
   h1,

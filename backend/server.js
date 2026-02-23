@@ -6,6 +6,7 @@ const path = require('path');
 const http = require('http');
 const { Server } = require('socket.io');
 const setupSocket = require('./socket/socketHandler');
+const Message = require('./models/Message');
 
 dotenv.config();
 connectDB();
@@ -51,7 +52,9 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/courses', require('./routes/courseRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
-app.use('/api/chat', require('./routes/chatRoutes'));
+app.use('/api/conversations', require('./routes/conversationRoutes'));
+app.use('/api/messages', require('./routes/messageRoutes'));
+app.use('/api/reports', require('./routes/reportRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/enrollments', require('./routes/enrollmentRoutes'));
 app.use('/api/interactions', require('./routes/interactionRoutes'));
@@ -60,6 +63,7 @@ app.use('/api/support', require('./routes/supportRoutes'));
 app.use('/api/swaps', require('./routes/swapRoutes'));
 app.use('/api/categories', require('./routes/categoryRoutes'));
 app.use('/api/discussions', require('./routes/discussionRoutes'));
+app.use('/api/communities', require('./routes/communityRoutes'));
 
 // ==========================================================================
 // GLOBAL SEARCH ENDPOINT — searches across courses, users, and skills
@@ -245,3 +249,18 @@ server.listen(PORT, () => {
   console.log(`🔁 Skill Swaps: /api/swaps`);
   console.log(`📂 Categories: /api/categories`);
 });
+
+// DISAPPEARING MESSAGES CLEANUP JOB (Runs every minute)
+setInterval(async () => {
+  try {
+    const now = new Date();
+    const result = await Message.deleteMany({
+      expiresAt: { $lt: now }
+    });
+    if (result.deletedCount > 0) {
+      console.log(`🧹 Cleanup: Deleted ${result.deletedCount} expired disappearing messages.`);
+    }
+  } catch (error) {
+    console.error('❌ Error in disappearing messages cleanup job:', error);
+  }
+}, 60000);

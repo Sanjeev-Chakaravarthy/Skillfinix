@@ -37,11 +37,25 @@ const avatarStorage = new CloudinaryStorage({
 // Chat file upload storage
 const chatStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
-  params: {
-    folder: 'skillup-hub/chat',
-    resource_type: 'auto',
-    allowed_formats: ['jpg', 'png', 'jpeg', 'webp', 'mp4', 'pdf', 'doc', 'docx', 'mp3', 'wav'],
-  },
+  params: async (req, file) => {
+    let resourceType = 'image';
+    
+    if (file.mimetype.startsWith('video') || file.mimetype.startsWith('audio')) {
+      resourceType = 'video';
+    } else if (
+      file.mimetype === 'application/pdf' || 
+      file.mimetype.includes('application') ||
+      file.mimetype.includes('text')
+    ) {
+      resourceType = 'raw';
+    }
+
+    return {
+      folder: 'skillup-hub/chat',
+      resource_type: resourceType,
+      public_id: Date.now() + '-' + file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, '')
+    };
+  }
 });
 
 // Increase file size limits — allow up to 500MB for video uploads
@@ -50,7 +64,10 @@ const upload = multer({
   limits: { fileSize: 500 * 1024 * 1024 } // 500 MB
 });
 const uploadAvatar = multer({ storage: avatarStorage });
-const chatFileUpload = multer({ storage: chatStorage });
+const chatFileUpload = multer({ 
+  storage: chatStorage,
+  limits: { fileSize: 50 * 1024 * 1024 } // 50 MB
+});
 
 module.exports = {
   cloudinary,

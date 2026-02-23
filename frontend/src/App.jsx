@@ -36,6 +36,7 @@ const StartLearning = lazy(() => import("@/pages/StartLearning"));
 const LiveSessions  = lazy(() => import("@/pages/LiveSessions"));
 const Support       = lazy(() => import("@/pages/Support"));
 const MySwaps       = lazy(() => import("@/pages/MySwaps"));
+const Communities   = lazy(() => import("@/pages/Communities"));
 const UploadVideo   = lazy(() => import("@/pages/UploadVideo"));
 const NotFound      = lazy(() => import("@/pages/NotFound"));
 const Login         = lazy(() => import("@/pages/Login"));
@@ -70,19 +71,26 @@ const PageLoader = () => (
 );
 
 // ─── Main App Layout ──────────────────────────────────────────────────────────
-const MainLayout = () => (
-  <div className="min-h-screen bg-background text-foreground">
-    <Navbar />
-    <div className="flex pt-0">
-      <Sidebar />
-      <main className="flex-1 lg:ml-64 min-h-[calc(100vh-4rem)] px-4 lg:px-6 pb-6 pt-4 overflow-x-hidden">
-        <Suspense fallback={<PageLoader />}>
-          <Outlet />
-        </Suspense>
-      </main>
+const MainLayout = () => {
+  const { loading } = useAuth();
+  
+  // Prevent layout flash on reload
+  if (loading) return <div className="h-screen bg-background" />;
+  
+  return (
+    <div className="flex flex-col h-screen overflow-hidden bg-background text-foreground">
+      <Navbar />
+      <div className="flex flex-1 min-h-0 overflow-hidden bg-background">
+        <Sidebar />
+        <main className="flex-1 min-w-0 overflow-y-auto p-4 lg:p-6 pb-12 relative z-0">
+          <Suspense fallback={<PageLoader />}>
+            <Outlet />
+          </Suspense>
+        </main>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 // ─── Auth Layout (no Navbar/Sidebar) ─────────────────────────────────────────
 const AuthLayout = () => {
@@ -157,7 +165,7 @@ const App = () => (
                     <Route path="/live-sessions"  element={<LiveSessions />} />
                     <Route path="/support"        element={<Support />} />
                     <Route path="/my-swaps"       element={<MySwaps />} />
-                    <Route path="/communities"    element={<ComingSoon title="Communities" />} />
+                    <Route path="/communities"    element={<Communities />} />
 
                     {/* Profile & Settings */}
                     <Route path="/profile"  element={<Profile />} />
