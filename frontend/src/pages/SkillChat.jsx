@@ -962,7 +962,7 @@ const SkillChat = () => {
 
       {/* Chat Window */}
       {selectedChat ? (
-        <div className="flex flex-col flex-1">
+        <div className="flex flex-col flex-1 min-w-0">
           {/* Chat Header */}
           <div className="flex items-center justify-between p-4 border-b border-border bg-card">
             <div className="flex items-center gap-3">

@@ -129,7 +129,7 @@ const Sidebar = () => {
 
       {/* Sidebar */}
       <aside className={cn(
-        'z-40 w-64 h-full bg-sidebar border-r border-sidebar-border transition-transform duration-300 lg:translate-x-0 shrink-0 flex flex-col',
+        'sidebar z-40 h-full bg-sidebar border-r border-sidebar-border transition-transform duration-300 lg:translate-x-0 shrink-0 flex flex-col',
         sidebarOpen ? 'fixed inset-y-0 left-0 translate-x-0 shadow-2xl' : 'fixed inset-y-0 left-0 -translate-x-full lg:static lg:translate-x-0'
       )}>
         {/* Mobile Close */}

@@ -72,11 +72,11 @@ const PageLoader = () => (
 
 // ─── Main App Layout ──────────────────────────────────────────────────────────
 const MainLayout = () => (
-  <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
+  <div className="app-container bg-background text-foreground">
     <Navbar />
-    <div className="flex flex-1 overflow-hidden">
+    <div className="layout-wrapper">
       <Sidebar />
-      <main className="flex-1 h-full overflow-y-auto overflow-x-hidden p-4 lg:p-6 pb-12 overscroll-contain relative z-0">
+      <main className="main-content p-4 lg:p-6 pb-12 overscroll-contain relative z-0">
         <Suspense fallback={<PageLoader />}>
           <Outlet />
         </Suspense>
