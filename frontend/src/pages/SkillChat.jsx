@@ -20,7 +20,15 @@ import {
   CheckCheck,
   Check,
   Clock,
-  AlertCircle
+  AlertCircle,
+  User, 
+  CheckSquare, 
+  BellOff, 
+  Timer, 
+  Star, 
+  Flag, 
+  Ban, 
+  Trash2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
@@ -55,6 +63,21 @@ const SkillChat = () => {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
   const [previewImages, setPreviewImages] = useState([]);
+  
+  // WhatsApp Header Menu & Modal States
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
+  const [contactModalOpen, setContactModalOpen] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [blockModalOpen, setBlockModalOpen] = useState(false);
+  const [clearChatModalOpen, setClearChatModalOpen] = useState(false);
+  const [deleteChatModalOpen, setDeleteChatModalOpen] = useState(false);
+  
+  // Chat features states
+  const [isMuted, setIsMuted] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [disappearingTimer, setDisappearingTimer] = useState(0); // 0 = off, else hours
+  const headerMenuRef = useRef(null);
   
   // Voice recording states
   const [isRecording, setIsRecording] = useState(false);
@@ -110,6 +133,29 @@ const SkillChat = () => {
       document.body.style.overflow = "unset";
     };
   }, [previewOpen]);
+
+  // Handle header menu outside click and Escape
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      if (headerMenuRef.current && !headerMenuRef.current.contains(event.target)) {
+        setHeaderMenuOpen(false);
+      }
+    };
+    
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setHeaderMenuOpen(false);
+    };
+
+    if (headerMenuOpen) {
+      document.addEventListener('mousedown', handleOutsideClick);
+      document.addEventListener('keydown', handleKeyDown);
+    }
+    
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [headerMenuOpen]);
 
   // Fetch conversations
   const fetchConversations = async () => {
@@ -1046,9 +1092,103 @@ const SkillChat = () => {
               <button className="p-2 transition-colors rounded-lg hover:bg-muted">
                 <Video className="w-5 h-5 text-muted-foreground" />
               </button>
-              <button className="p-2 transition-colors rounded-lg hover:bg-muted">
-                <MoreVertical className="w-5 h-5 text-muted-foreground" />
-              </button>
+              <div className="relative" ref={headerMenuRef}>
+                <button 
+                  className="p-2 transition-colors rounded-lg hover:bg-muted"
+                  onClick={() => setHeaderMenuOpen(!headerMenuOpen)}
+                >
+                  <MoreVertical className="w-5 h-5 text-muted-foreground" />
+                </button>
+                
+                {/* WhatsApp Style Dropdown Menu */}
+                {headerMenuOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-56 rounded-xl bg-card border border-border/50 shadow-2xl py-2 z-50 animate-in fade-in zoom-in-95 duration-100 flex flex-col items-stretch">
+                    <button 
+                      className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-muted transition-colors text-sm text-foreground text-left"
+                      onClick={() => { setHeaderMenuOpen(false); setContactModalOpen(true); }}
+                    >
+                      <User className="w-4 h-4 text-muted-foreground" />
+                      Contact Info
+                    </button>
+                    <button 
+                      className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-muted transition-colors text-sm text-foreground text-left"
+                      onClick={() => { setHeaderMenuOpen(false); toast({ title: "Select messages mode enabled" }); }}
+                    >
+                      <CheckSquare className="w-4 h-4 text-muted-foreground" />
+                      Select Messages
+                    </button>
+                    <button 
+                      className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-muted transition-colors text-sm text-foreground text-left"
+                      onClick={() => { 
+                        setHeaderMenuOpen(false); 
+                        setIsMuted(!isMuted);
+                        toast({ title: isMuted ? "Notifications Unmuted" : "Notifications Muted" });
+                      }}
+                    >
+                      <BellOff className="w-4 h-4 text-muted-foreground" />
+                      {isMuted ? "Unmute Notifications" : "Mute Notifications"}
+                    </button>
+                    <button 
+                      className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-muted transition-colors text-sm text-foreground text-left"
+                      onClick={() => { 
+                        setHeaderMenuOpen(false); 
+                        setDisappearingTimer(disappearingTimer === 0 ? 24 : 0);
+                        toast({ title: disappearingTimer === 0 ? "Disappearing messages set to 24h" : "Disappearing messages disabled" });
+                      }}
+                    >
+                      <Timer className="w-4 h-4 text-muted-foreground" />
+                      Disappearing Messages
+                    </button>
+                    <button 
+                      className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-muted transition-colors text-sm text-foreground text-left"
+                      onClick={() => { 
+                        setHeaderMenuOpen(false); 
+                        setIsFavorite(!isFavorite);
+                        toast({ title: isFavorite ? "Removed from Favourites" : "Added to Favourites" });
+                      }}
+                    >
+                      <Star className="w-4 h-4 shadow-sm text-muted-foreground" />
+                      Add to Favourites
+                    </button>
+                    <button 
+                      className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-muted transition-colors text-sm text-foreground text-left border-b border-border/50 pb-3 mb-1"
+                      onClick={() => { setHeaderMenuOpen(false); setSelectedChat(null); }}
+                    >
+                      <X className="w-4 h-4 text-muted-foreground" />
+                      Close Chat
+                    </button>
+                    
+                    <button 
+                      className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-muted transition-colors text-sm text-foreground text-left mt-1"
+                      onClick={() => { setHeaderMenuOpen(false); setReportModalOpen(true); }}
+                    >
+                      <Flag className="w-4 h-4 text-muted-foreground" />
+                      Report
+                    </button>
+                    <button 
+                      className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-muted transition-colors text-sm text-foreground text-left"
+                      onClick={() => { setHeaderMenuOpen(false); setBlockModalOpen(true); }}
+                    >
+                      <Ban className="w-4 h-4 text-muted-foreground" />
+                      Block
+                    </button>
+                    <button 
+                      className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-muted transition-colors text-sm text-foreground text-left"
+                      onClick={() => { setHeaderMenuOpen(false); setClearChatModalOpen(true); }}
+                    >
+                      <Trash2 className="w-4 h-4 text-muted-foreground" />
+                      Clear Chat
+                    </button>
+                    <button 
+                      className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-muted transition-colors text-sm text-red-500 font-medium text-left group"
+                      onClick={() => { setHeaderMenuOpen(false); setDeleteChatModalOpen(true); }}
+                    >
+                      <AlertCircle className="w-4 h-4 text-red-500 group-hover:scale-110 transition-transform" />
+                      Delete Chat
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -1422,6 +1562,101 @@ const SkillChat = () => {
               ›
             </button>
           )}
+        </div>,
+        document.getElementById("modal-root")
+      )}
+
+      {/* WhatsApp Menu Modals - Rendered via Portal */}
+      {contactModalOpen && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 animate-in fade-in duration-200" onClick={() => setContactModalOpen(false)}>
+          <div className="bg-card w-full max-w-sm rounded-2xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-muted p-8 flex flex-col items-center justify-center relative">
+              <button className="absolute top-4 right-4 text-muted-foreground hover:text-foreground" onClick={() => setContactModalOpen(false)}><X className="w-5 h-5" /></button>
+              <img src={selectedChat?.user?.avatar} alt={selectedChat?.user?.name} className="w-24 h-24 rounded-full object-cover border-4 border-card shadow-lg" />
+              <h2 className="mt-4 text-xl font-semibold text-foreground">{selectedChat?.user?.name}</h2>
+              <p className="text-sm text-muted-foreground">{isOnline(selectedChat?.user?._id) ? 'Online' : 'Offline'}</p>
+            </div>
+            <div className="p-4 space-y-4">
+              <div className="bg-muted/50 p-4 rounded-xl">
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">About</p>
+                <p className="text-sm text-foreground">Using Skillfinix for collaboration & learning.</p>
+              </div>
+              <div className="bg-muted/50 rounded-xl overflow-hidden">
+                <button className="w-full text-left px-4 py-3 text-sm text-foreground hover:bg-muted transition-colors flex justify-between items-center border-b border-border/50">
+                  <span>Block contact</span>
+                  <Ban className="w-4 h-4 text-red-500" />
+                </button>
+                <button className="w-full text-left px-4 py-3 text-sm text-red-500 hover:bg-muted transition-colors flex justify-between items-center">
+                  <span>Report contact</span>
+                  <Flag className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.getElementById("modal-root")
+      )}
+
+      {reportModalOpen && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 animate-in fade-in duration-200" onClick={() => setReportModalOpen(false)}>
+          <div className="bg-card w-full max-w-sm p-6 rounded-2xl shadow-xl animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-medium text-foreground mb-4">Report {selectedChat?.user?.name}?</h3>
+            <p className="text-sm text-muted-foreground mb-6">The last 5 messages from this contact will be forwarded to the admin. This contact will not be notified.</p>
+            <div className="flex items-center gap-2 mb-6">
+              <input type="checkbox" id="block-and-report" className="w-4 h-4 rounded text-primary focus:ring-primary/20 accent-primary" />
+              <label htmlFor="block-and-report" className="text-sm text-foreground">Block contact and clear chat</label>
+            </div>
+            <div className="flex justify-end gap-3 font-medium">
+              <button className="px-4 py-2 text-primary hover:bg-muted rounded-lg transition-colors" onClick={() => setReportModalOpen(false)}>Cancel</button>
+              <button className="px-5 py-2 bg-primary text-primary-foreground rounded-lg transition-all hover:bg-primary/90 hover:shadow-md" onClick={() => { setReportModalOpen(false); toast({ title: "Contact reported", description: "Thanks for keeping our community safe." }); }}>Report</button>
+            </div>
+          </div>
+        </div>,
+        document.getElementById("modal-root")
+      )}
+
+      {blockModalOpen && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 animate-in fade-in duration-200" onClick={() => setBlockModalOpen(false)}>
+          <div className="bg-card w-full max-w-sm p-6 rounded-2xl shadow-xl animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-medium text-foreground mb-2">Block {selectedChat?.user?.name}?</h3>
+            <p className="text-sm text-muted-foreground mb-6">Blocked contacts will no longer be able to call you or send you messages.</p>
+            <div className="flex justify-end gap-3 font-medium">
+              <button className="px-4 py-2 text-primary hover:bg-muted rounded-lg transition-colors" onClick={() => setBlockModalOpen(false)}>Cancel</button>
+              <button className="px-5 py-2 bg-primary text-primary-foreground rounded-lg transition-all hover:bg-primary/90 hover:shadow-md" onClick={() => { setBlockModalOpen(false); setIsBlocked(!isBlocked); toast({ title: isBlocked ? "Unblocked successfully" : "Blocked successfully", variant: isBlocked ? "default" : "destructive" }); }}>{isBlocked ? "Unblock" : "Block"}</button>
+            </div>
+          </div>
+        </div>,
+        document.getElementById("modal-root")
+      )}
+
+      {clearChatModalOpen && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 animate-in fade-in duration-200" onClick={() => setClearChatModalOpen(false)}>
+          <div className="bg-card w-full max-w-sm p-6 rounded-2xl shadow-xl animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-medium text-foreground mb-2">Clear this chat?</h3>
+            <p className="text-sm text-muted-foreground mb-6">Messages will be removed for you. The other participant will still see them.</p>
+            <div className="flex items-center gap-2 mb-6">
+              <input type="checkbox" id="delete-media" className="w-4 h-4 rounded text-primary focus:ring-primary/20 accent-primary" defaultChecked />
+              <label htmlFor="delete-media" className="text-sm text-foreground">Also delete media received in this chat</label>
+            </div>
+            <div className="flex justify-end gap-3 font-medium">
+              <button className="px-4 py-2 text-primary hover:bg-muted rounded-lg transition-colors" onClick={() => setClearChatModalOpen(false)}>Cancel</button>
+              <button className="px-5 py-2 bg-red-500 text-white rounded-lg transition-all hover:bg-red-600 hover:shadow-md" onClick={() => { setClearChatModalOpen(false); setMessages([]); toast({ title: "Chat cleared successfully" }); }}>Clear chat</button>
+            </div>
+          </div>
+        </div>,
+        document.getElementById("modal-root")
+      )}
+
+      {deleteChatModalOpen && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 animate-in fade-in duration-200" onClick={() => setDeleteChatModalOpen(false)}>
+          <div className="bg-card w-full max-w-sm p-6 rounded-2xl shadow-xl animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-medium text-foreground mb-2">Delete chat with {selectedChat?.user?.name}?</h3>
+            <p className="text-sm text-muted-foreground mb-6">This chat will be completely removed from your history.</p>
+            <div className="flex justify-end gap-3 font-medium">
+              <button className="px-4 py-2 text-primary hover:bg-muted rounded-lg transition-colors" onClick={() => setDeleteChatModalOpen(false)}>Cancel</button>
+              <button className="px-5 py-2 bg-red-500 text-white rounded-lg transition-all hover:bg-red-600 hover:shadow-md" onClick={() => { setDeleteChatModalOpen(false); setConversations(prev => prev.filter(c => c.user._id !== selectedChat.user._id)); setSelectedChat(null); toast({ title: "Chat deleted", variant: "destructive" }); }}>Delete chat</button>
+            </div>
+          </div>
         </div>,
         document.getElementById("modal-root")
       )}
