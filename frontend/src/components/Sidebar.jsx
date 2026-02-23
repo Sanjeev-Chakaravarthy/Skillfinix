@@ -61,6 +61,10 @@ const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Root Layout Stability Lock (Prevents Animation Flashing on Load)
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const [expandedSections, setExpandedSections] = useState(['You', 'Recent Courses', 'Recent Swaps']);
   const [exploreOpen, setExploreOpen] = useState(false);
 
@@ -129,8 +133,9 @@ const Sidebar = () => {
 
       {/* Sidebar */}
       <aside className={cn(
-        'w-[260px] min-w-[260px] max-w-[260px] flex-shrink-0 z-40 h-full bg-sidebar border-r border-sidebar-border transition-transform duration-300 lg:translate-x-0 flex flex-col',
-        sidebarOpen ? 'fixed inset-y-0 left-0 translate-x-0 shadow-2xl' : 'fixed inset-y-0 left-0 -translate-x-full lg:static lg:translate-x-0'
+        'w-[260px] min-w-[260px] max-w-[260px] flex-shrink-0 z-40 h-full bg-sidebar border-r border-sidebar-border flex flex-col lg:static lg:translate-x-0',
+        mounted ? 'transition-transform duration-300' : '',
+        sidebarOpen ? 'fixed inset-y-0 left-0 translate-x-0 shadow-2xl' : 'fixed inset-y-0 left-0 -translate-x-full'
       )}>
         {/* Mobile Close */}
         <button
