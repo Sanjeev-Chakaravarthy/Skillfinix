@@ -18,6 +18,8 @@ import {
   Volume2,
   CheckCheck,
   Check,
+  Clock,
+  AlertCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
@@ -666,15 +668,9 @@ const SkillChat = () => {
       const filename = `voice_${Date.now()}.${extension}`;
       formData.append('file', audioBlob, filename);
       
-      const uploadRes = await api.post('/chat/upload', formData);
-      
-      if (!uploadRes.data.files?.length) {
-        throw new Error('No file URL received from upload');
-      }
-      
-      const uploadedFile = uploadRes.data.files[0];
-      
       const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const localPreviewUrl = URL.createObjectURL(audioBlob);
+      
       const optimisticMessage = {
         _id: tempId,
         tempId,
@@ -689,16 +685,24 @@ const SkillChat = () => {
           avatar: selectedChat.user.avatar
         },
         text: '',
-        fileUrl: uploadedFile.url,
-        fileType: uploadedFile.type,
+        fileUrl: localPreviewUrl,
+        fileType: 'audio',
         read: false,
-        delivered: false, // ✅ Default to false
+        delivered: false,
         deliveryStatus: 'sending',
         createdAt: new Date().toISOString()
       };
       
       setMessages(prev => [...prev, optimisticMessage]);
       setTimeout(scrollToBottom, 50);
+      
+      const uploadRes = await api.post('/chat/upload', formData);
+      
+      if (!uploadRes.data.files?.length) {
+        throw new Error('No file URL received from upload');
+      }
+      
+      const uploadedFile = uploadRes.data.files[0];
       
       const messageRes = await api.post('/chat/messages', {
         receiverId: selectedChat.user._id,
@@ -707,21 +711,16 @@ const SkillChat = () => {
         fileType: uploadedFile.type
       });
       
-      console.log('✅ Voice message created:', messageRes.data._id);
-      
       const serverMessage = {
         ...messageRes.data,
         _id: messageRes.data._id.toString(),
         tempId,
-        // ✅ Use DB delivery status
         deliveryStatus: messageRes.data.delivered ? 'delivered' : 'sent'
       };
       
       setMessages(prev => 
         prev.map(m => m.tempId === tempId ? serverMessage : m)
       );
-
-      console.log('✅ Voice message replaced in state with ID:', serverMessage._id);
       
       // ✅ Wait for state stabilization before socket emit
       setTimeout(() => {
@@ -746,7 +745,7 @@ const SkillChat = () => {
         description: error.response?.data?.message || "Failed to send voice message.",
         variant: "destructive"
       });
-      setMessages(prev => prev.filter(m => !m.tempId));
+      setMessages(prev => prev.map(m => m.tempId === tempId ? { ...m, deliveryStatus: 'failed' } : m));
     } finally {
       setSending(false);
     }
@@ -762,52 +761,64 @@ const SkillChat = () => {
     try {
       setSending(true);
 
-      let fileUrl = null;
-      let fileType = 'text';
+      let localPreviewUrl = null;
+      let uiFileType = 'text';
+      let selectedFile = null;
+
       if (selectedFiles.length > 0) {
-        const uploadedFiles = await uploadFiles([selectedFiles[0]]);
-        if (uploadedFiles.length > 0) {
-          fileUrl = uploadedFiles[0].url;
-          fileType = uploadedFiles[0].type || 'file';
-        }
-        setSelectedFiles([]);
+        selectedFile = selectedFiles[0];
+        localPreviewUrl = URL.createObjectURL(selectedFile);
+        if (selectedFile.type.startsWith('image/')) uiFileType = 'image';
+        else if (selectedFile.type.startsWith('video/')) uiFileType = 'video';
+        else if (selectedFile.type.startsWith('audio/')) uiFileType = 'audio';
+        else uiFileType = 'document';
       }
 
       const messageText = messageInput.trim();
       const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-      // ✅ Optimistic message with delivered: false by default
+      // ✅ Optimistic message directly to UI
       const optimisticMessage = {
         _id: tempId,
         tempId,
         sender: user,
         receiver: selectedChat.user,
         text: messageText,
-        fileUrl,
-        fileType,
+        fileUrl: localPreviewUrl,
+        fileType: uiFileType,
         read: false,
-        delivered: false, // ✅ Default to false
+        delivered: false,
         deliveryStatus: 'sending',
         createdAt: new Date().toISOString()
       };
 
       setMessages(prev => [...prev, optimisticMessage]);
       setMessageInput('');
+      setSelectedFiles([]); // clear local blob
       setTimeout(scrollToBottom, 50);
 
-      // ✅ API call - server will set delivered:true if receiver online
+      let fileUrl = null;
+      let finalFileType = uiFileType;
+      if (selectedFile) {
+        const uploadedFiles = await uploadFiles([selectedFile]);
+        if (uploadedFiles.length > 0) {
+          fileUrl = uploadedFiles[0].url;
+          finalFileType = uploadedFiles[0].type || uiFileType;
+        }
+      }
+
+      // ✅ API call 
       const res = await api.post('/chat/messages', {
         receiverId: selectedChat.user._id,
         text: messageText,
         fileUrl,
-        fileType
+        fileType: finalFileType
       });
 
       const serverMessage = {
         ...res.data,
         _id: res.data._id.toString(),
         tempId,
-        // ✅ Use DB delivery status from server response
         deliveryStatus: res.data.delivered ? 'delivered' : 'sent'
       };
 
@@ -815,8 +826,6 @@ const SkillChat = () => {
       setMessages(prev =>
         prev.map(m => (m.tempId === tempId ? serverMessage : m))
       );
-
-      console.log('✅ Message replaced in state with ID:', serverMessage._id);
       console.log('   Delivered status:', serverMessage.delivered);
 
       // ✅ CRITICAL: Wait for state update before emitting socket
@@ -836,7 +845,7 @@ const SkillChat = () => {
         description: "Failed to send message",
         variant: "destructive"
       });
-      setMessages(prev => prev.filter(m => !m.tempId));
+      setMessages(prev => prev.map(m => m.tempId === tempId ? { ...m, deliveryStatus: 'failed' } : m));
     } finally {
       setSending(false);
     }
@@ -1076,13 +1085,14 @@ const SkillChat = () => {
                         {isMe && (
                           <span>
                             {deliveryStatus === 'read' || isRead ? (
-                              // Blue double checkmark (read)
                               <CheckCheck className="w-3 h-3 text-blue-500" />
                             ) : deliveryStatus === 'delivered' ? (
-                              // Grey double checkmark (delivered)
                               <CheckCheck className="w-3 h-3 text-gray-400" />
+                            ) : deliveryStatus === 'sending' ? (
+                              <Clock className="w-3 h-3 text-gray-400" />
+                            ) : deliveryStatus === 'failed' ? (
+                              <AlertCircle className="w-3 h-3 text-red-500" />
                             ) : (
-                              // Single checkmark (sent)
                               <Check className="w-3 h-3 text-gray-400" />
                             )}
                           </span>
