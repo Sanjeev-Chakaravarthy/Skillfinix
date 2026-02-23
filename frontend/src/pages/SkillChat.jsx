@@ -894,7 +894,7 @@ const SkillChat = () => {
         </div>
 
         {/* Conversations */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 min-w-0 overflow-y-auto">
           {filteredConversations.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full p-6 text-center">
               <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 rounded-full bg-muted">
@@ -1003,7 +1003,7 @@ const SkillChat = () => {
           </div>
 
           {/* Messages */}
-          <div className="flex-1 p-4 pb-20 space-y-4 overflow-y-auto bg-muted/10">
+          <div className="flex-1 min-w-0 p-4 pb-20 space-y-4 overflow-y-auto bg-muted/10">
             {loadingMessages ? (
               <div className="flex items-center justify-center h-full">
                 <div className="flex flex-col items-center gap-2">

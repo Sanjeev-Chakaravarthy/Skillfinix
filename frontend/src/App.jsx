@@ -71,19 +71,26 @@ const PageLoader = () => (
 );
 
 // ─── Main App Layout ──────────────────────────────────────────────────────────
-const MainLayout = () => (
-  <div className="app-container bg-background text-foreground">
-    <Navbar />
-    <div className="layout-wrapper">
-      <Sidebar />
-      <main className="main-content p-4 lg:p-6 pb-12 overscroll-contain relative z-0">
-        <Suspense fallback={<PageLoader />}>
-          <Outlet />
-        </Suspense>
-      </main>
+const MainLayout = () => {
+  const { loading } = useAuth();
+  
+  // Prevent layout flash on reload
+  if (loading) return <div className="h-screen bg-background" />;
+  
+  return (
+    <div className="flex flex-col h-screen overflow-hidden bg-background text-foreground">
+      <Navbar />
+      <div className="flex flex-1 min-h-0 overflow-hidden bg-background">
+        <Sidebar />
+        <main className="flex-1 min-w-0 overflow-y-auto p-4 lg:p-6 pb-12 relative z-0">
+          <Suspense fallback={<PageLoader />}>
+            <Outlet />
+          </Suspense>
+        </main>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 // ─── Auth Layout (no Navbar/Sidebar) ─────────────────────────────────────────
 const AuthLayout = () => {
