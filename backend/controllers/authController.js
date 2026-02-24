@@ -115,7 +115,7 @@ const googleAuth = async (req, res) => {
         email,
         password: randomPassword,
         avatar: picture, // Store Google OAuth picture URL directly
-        role: "Student",
+        role: "student",
       });
 
       res.status(201).json({
