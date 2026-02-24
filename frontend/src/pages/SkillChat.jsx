@@ -210,6 +210,13 @@ const SkillChat = () => {
     const userId = selectedChat.user._id;
     console.log('🔄 CHAT CHANGED - Loading messages for:', userId);
     
+    // Reset individual chat feature states to prevent "ghosting" from previous chat
+    setIsBlocked(selectedChat.isBlocked || false);
+    setHasBlockedMe(selectedChat.hasBlockedMe || false);
+    setIsMuted(false);
+    setIsFavorite(false);
+    setDisappearingTimer(0);
+    
     setLoadingMessages(true);
     setMessages([]);
     
@@ -386,26 +393,32 @@ const SkillChat = () => {
     if (!selectedChat || dropdownActionLoading) return;
     const prevBlocked = isBlocked;
     const newBlockedState = !prevBlocked;
+    const targetUserId = selectedChat.user._id;
     
     try {
       setDropdownActionLoading('block');
-      setIsBlocked(newBlockedState); // Optimistic
+      setIsBlocked(newBlockedState); // Optimistic UI
       
       // Update conversations list immediately (Optimistic)
       setConversations(prev => prev.map(c => 
-        c.user._id === selectedChat.user._id 
+        c.user._id === targetUserId 
           ? { ...c, isBlocked: newBlockedState } 
           : c
       ));
 
-      const res = await api.put(`/users/block/${selectedChat.user._id}`);
+      // Update selectedChat local state if it's the one we're blocking
+      if (selectedChat.user._id === targetUserId) {
+        setSelectedChat(prev => ({ ...prev, isBlocked: newBlockedState }));
+      }
+
+      const res = await api.put(`/users/block/${targetUserId}`);
       
       const confirmedState = res.data.success ? res.data.isBlocked : newBlockedState;
       setIsBlocked(confirmedState);
       
-      // Sync confirmed state to conversations list
+      // Sync confirmed state to everything
       setConversations(prev => prev.map(c => 
-        c.user._id === selectedChat.user._id 
+        c.user._id === targetUserId 
           ? { ...c, isBlocked: confirmedState } 
           : c
       ));
@@ -414,16 +427,18 @@ const SkillChat = () => {
         toast({ title: res.data.message });
       }
       setBlockModalOpen(false);
+      setContactModalOpen(false); // WhatsApp closes info when blocking
     } catch (error) {
+      console.error('Error blocking user:', error);
       setIsBlocked(prevBlocked); // Rollback
       setConversations(prev => prev.map(c => 
-        c.user._id === selectedChat.user._id 
+        c.user._id === targetUserId 
           ? { ...c, isBlocked: prevBlocked } 
           : c
       ));
       toast({ 
         title: "Error blocking user", 
-        description: error.response?.data?.message || error.message,
+        description: error.response?.data?.message || "Failed to update block status",
         variant: "destructive" 
       });
     } finally {
@@ -479,26 +494,37 @@ const SkillChat = () => {
     if (!selectedChat || dropdownActionLoading) return;
     try {
       setDropdownActionLoading('report');
-      const messageIds = messages.slice(-5).map(m => m._id);
+      // 🔥 FIX: Filter out temp messages with tempId to avoid MongoDB ObjectId validation errors
+      const validMessages = messages.filter(m => !m.tempId && !m._id.startsWith('temp_'));
+      const messageIds = validMessages.slice(-5).map(m => m._id);
+      
       await api.post('/reports', {
         reportedUserId: selectedChat.user._id,
         reason: reason || 'Report from SkillChat',
         messageIds
       });
-      toast({ title: "User reported", description: "The admin will review this report." });
+
+      toast({ 
+        title: "User reported", 
+        description: blockAndClear ? "User reported, blocked, and chat cleared." : "The admin will review this report." 
+      });
+      
       setReportModalOpen(false);
       setContactModalOpen(false);
 
       // If "Block and Clear" was checked, do it now
       if (blockAndClear) {
-        // We wait for these to complete
-        await handleBlockUser(); 
+        // WhatsApp behavior: Block First, Then Clear
+        if (!isBlocked) {
+          await handleBlockUser(); 
+        }
         await handleClearChat();
       }
     } catch (error) {
+      console.error('Error reporting user:', error);
       toast({ 
         title: "Error reporting user", 
-        description: error.response?.data?.message || error.message,
+        description: error.response?.data?.message || "Something went wrong while reporting",
         variant: "destructive" 
       });
     } finally {
@@ -1309,9 +1335,16 @@ const SkillChat = () => {
                 )}
               </div>
               <div>
-                <h3 className="font-medium text-foreground">{selectedChat.user.name}</h3>
-                <p className="text-xs text-muted-foreground">
-                  {(isOnline(selectedChat.user._id) && !isBlocked && !hasBlockedMe) ? 'Online' : 'Offline'}
+                <h3 className="font-medium text-foreground leading-tight cursor-pointer hover:text-primary transition-colors" onClick={() => setContactModalOpen(true)}>
+                  {selectedChat.user.name}
+                </h3>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {(isOnline(selectedChat.user._id) && !isBlocked && !hasBlockedMe) ? (
+                    <span className="flex items-center gap-1 text-green-500 font-medium">
+                      <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                      Online
+                    </span>
+                  ) : 'Offline'}
                 </p>
               </div>
             </div>
@@ -1489,9 +1522,12 @@ const SkillChat = () => {
                     )}
                     {!isMe && !selectionMode && (
                       <img
-                        src={message.sender.avatar}
+                        src={(isBlocked || hasBlockedMe) ? 'https://cdn-icons-png.flaticon.com/512/149/149071.png' : message.sender.avatar}
                         alt={message.sender.name}
-                        className="object-cover w-8 h-8 rounded-full"
+                        className={cn(
+                          "object-cover w-8 h-8 rounded-full",
+                          (isBlocked || hasBlockedMe) && "grayscale-[0.5]"
+                        )}
                       />
                     )}
                     <div className={cn(
