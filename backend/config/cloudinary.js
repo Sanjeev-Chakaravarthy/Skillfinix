@@ -50,10 +50,12 @@ const chatStorage = new CloudinaryStorage({
       resourceType = 'raw';
     }
 
+    // Must NOT have transformations for raw (PDFs).
+    // Use file.originalname directly for public_id as requested
     return {
       folder: 'skillup-hub/chat',
       resource_type: resourceType,
-      public_id: Date.now() + '-' + file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, '')
+      public_id: Date.now() + '-' + file.originalname
     };
   }
 });
