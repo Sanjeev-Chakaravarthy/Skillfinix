@@ -1,7 +1,5 @@
 # Common
 node_modules/
-.env
-.env.local
 .env.*.local
 .DS_Store
 dist/
@@ -16,3 +14,4 @@ backend/.env
 frontend/node_modules/
 frontend/dist/
 frontend/.env
+config.bat
