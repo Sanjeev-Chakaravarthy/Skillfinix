@@ -146,6 +146,11 @@ const blockUser = async (req, res) => {
       currentUser.blockedUsers.push(userIdToBlock);
     }
 
+    // Auto-heal legacy users with uppercase roles (e.g., 'Student') before saving
+    if (currentUser.role && currentUser.role !== currentUser.role.toLowerCase()) {
+      currentUser.role = currentUser.role.toLowerCase();
+    }
+
     await currentUser.save();
 
     const action = isCurrentlyBlocked ? 'unblocked' : 'blocked';
