@@ -115,8 +115,8 @@ const blockUser = async (req, res) => {
       return res.status(400).json({ message: 'You cannot block yourself' });
     }
 
-    // Fetch fresh current user document (re-fetching ensures we have a mutable Mongoose document)
-    const currentUser = await User.findById(currentUserId);
+    // Read current block state — lean query, no Mongoose overhead
+    const currentUser = await User.findById(currentUserId).select('blockedUsers').lean();
     if (!currentUser) {
       return res.status(404).json({ message: 'Your account was not found' });
     }
@@ -127,31 +127,26 @@ const blockUser = async (req, res) => {
       return res.status(404).json({ message: 'User to block/unblock was not found' });
     }
 
-    // Initialise blockedUsers array if missing (handles legacy accounts)
-    if (!Array.isArray(currentUser.blockedUsers)) {
-      currentUser.blockedUsers = [];
-    }
-
-    const isCurrentlyBlocked = currentUser.blockedUsers.some(
+    const isCurrentlyBlocked = (currentUser.blockedUsers || []).some(
       (id) => id && id.toString() === userIdToBlock
     );
 
+    // ✅ Atomic update — does NOT trigger full Mongoose schema validation.
+    // This prevents failures caused by invalid enum values in OTHER fields
+    // (e.g. role: 'developver' typo) from breaking the block operation.
     if (isCurrentlyBlocked) {
-      // UNBLOCK — pull the entry out
-      currentUser.blockedUsers = currentUser.blockedUsers.filter(
-        (id) => id && id.toString() !== userIdToBlock
+      await User.findByIdAndUpdate(
+        currentUserId,
+        { $pull: { blockedUsers: new mongoose.Types.ObjectId(userIdToBlock) } },
+        { runValidators: false }
       );
     } else {
-      // BLOCK — only add if not already present (double-block guard)
-      currentUser.blockedUsers.push(userIdToBlock);
+      await User.findByIdAndUpdate(
+        currentUserId,
+        { $addToSet: { blockedUsers: new mongoose.Types.ObjectId(userIdToBlock) } },
+        { runValidators: false }
+      );
     }
-
-    // Auto-heal legacy users with uppercase roles (e.g., 'Student') before saving
-    if (currentUser.role && currentUser.role !== currentUser.role.toLowerCase()) {
-      currentUser.role = currentUser.role.toLowerCase();
-    }
-
-    await currentUser.save();
 
     const action = isCurrentlyBlocked ? 'unblocked' : 'blocked';
     console.log(`✅ [Block] ${currentUserId} ${action} ${userIdToBlock}`);
