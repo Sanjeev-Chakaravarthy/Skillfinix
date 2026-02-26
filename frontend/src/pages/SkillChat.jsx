@@ -998,7 +998,10 @@ const SkillChat = () => {
 
   const sendVoiceMessage = async (audioBlob) => {
     if (!selectedChat) return;
-    
+
+    // ✅ Declare tempId OUTSIDE try so catch block can reference it
+    const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
     try {
       setSending(true);
       
@@ -1011,7 +1014,6 @@ const SkillChat = () => {
       const filename = `voice_${Date.now()}.${extension}`;
       formData.append('file', audioBlob, filename);
       
-      const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const localPreviewUrl = URL.createObjectURL(audioBlob);
       
       const optimisticMessage = {
@@ -1101,6 +1103,9 @@ const SkillChat = () => {
     if (!selectedChat) return;
     if (!messageInput.trim() && selectedFiles.length === 0) return;
 
+    // ✅ Declare tempId OUTSIDE try so catch block can reference it
+    const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
     try {
       setSending(true);
 
@@ -1118,7 +1123,6 @@ const SkillChat = () => {
       }
 
       const messageText = messageInput.trim();
-      const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
       // ✅ Optimistic message directly to UI
       const optimisticMessage = {
@@ -1142,20 +1146,27 @@ const SkillChat = () => {
 
       let fileUrl = null;
       let finalFileType = uiFileType;
+      let finalFileName = selectedFile?.name || null;
+      let finalMimetype = selectedFile?.type || null;
+
       if (selectedFile) {
         const uploadedFiles = await uploadFiles([selectedFile]);
         if (uploadedFiles.length > 0) {
-          fileUrl = uploadedFiles[0].url;
-          finalFileType = uploadedFiles[0].type || uiFileType;
+          fileUrl        = uploadedFiles[0].url;
+          finalFileType  = uploadedFiles[0].type || uiFileType;
+          finalFileName  = uploadedFiles[0].filename || finalFileName;  // ✅ from server
+          finalMimetype  = uploadedFiles[0].mimetype || finalMimetype;  // ✅ from server
         }
       }
 
-      // ✅ API call 
+      // ✅ API call
       const res = await api.post('/messages', {
         receiverId: selectedChat.user._id,
         text: messageText,
         fileUrl,
-        fileType: finalFileType
+        fileType:     finalFileType,
+        fileName:     finalFileName,     // ✅ stored in DB
+        fileMimetype: finalMimetype,     // ✅ stored in DB
       });
 
       const serverMessage = {
@@ -1540,7 +1551,8 @@ const SkillChat = () => {
                             attachment={{
                               url: message.fileUrl,
                               type: message.fileType,
-                              filename: message.fileUrl.split('/').pop()
+                              filename: message.fileName || message.fileUrl.split('/').pop(),
+                              mimetype: message.fileMimetype || null,
                             }} 
                             isMe={isMe}
                             onImageClick={handleImageClick}
@@ -2175,6 +2187,27 @@ const AttachmentPreview = ({ attachment, isMe, onImageClick }) => {
   }
 
   // Generic document or file
+  const isPdf =
+    attachment.filename?.toLowerCase().endsWith('.pdf') ||
+    attachment.url?.toLowerCase().includes('.pdf');
+
+  const handleOpen = (e) => {
+    e.preventDefault();
+    const filename = attachment.filename || attachment.url?.split('/').pop() || 'file';
+    // For Supabase (and any direct public URL): open in new tab.
+    // The browser will download it if Content-Disposition: attachment is set,
+    // or display it inline (e.g. images). Either way no blank page.
+    const link = document.createElement('a');
+    link.href = attachment.url;
+    link.download = filename;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+
+
   return (
     <div className={cn(
       "flex items-center gap-3 p-3 rounded-xl shadow-sm border",
@@ -2196,18 +2229,18 @@ const AttachmentPreview = ({ attachment, isMe, onImageClick }) => {
           </span>
         )}
       </div>
-      <a
-        href={attachment.url}
-        download
-        target="_blank"
-        rel="noopener noreferrer"
+      {/* ✅ Click → always downloads via Cloudinary fl_attachment flag */}
+      <button
+        type="button"
+        onClick={handleOpen}
         className={cn(
           "w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors",
           isMe ? "bg-primary text-primary-foreground hover:bg-primary/90" : "bg-muted hover:bg-muted/80 text-foreground"
         )}
+        title="Download File"
       >
         <Download className="w-4 h-4" />
-      </a>
+      </button>
     </div>
   );
 };
