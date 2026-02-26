@@ -14,7 +14,7 @@ const {
   deleteChat
 } = require('../controllers/chatController');
 const { protect } = require('../middleware/authMiddleware');
-const { chatFileUpload } = require('../config/cloudinary');
+const { chatFileUpload } = require('../config/supabase');
 
 // All routes require authentication
 router.use(protect);
@@ -34,10 +34,11 @@ router.put('/messages/read/:userId', markAsRead);
 // Get unread message count
 router.get('/unread-count', getUnreadCount);
 
-// Upload file (images, videos, audio, documents) - strictly one per payload
+// Upload file (images, videos, audio, documents) — one file per request
+// Files go to Supabase Storage (skillchat-files bucket)
 router.post('/upload', chatFileUpload.single('file'), uploadFiles);
 
-// New WhatsApp style features
+// New WhatsApp-style features
 router.put('/conversations/:id/mute', muteConversation);
 router.put('/conversations/:id/favourite', favouriteConversation);
 router.put('/conversations/:id/disappearing', setDisappearingTimer);
