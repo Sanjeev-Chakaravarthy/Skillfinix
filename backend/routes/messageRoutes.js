@@ -9,14 +9,13 @@ const {
   clearChat
 } = require('../controllers/chatController');
 const { protect } = require('../middleware/authMiddleware');
-const { chatFileUpload } = require('../config/cloudinary');
+const { chatFileUpload } = require('../config/supabase');
 
 router.use(protect);
-
+router.get('/unread-count', getUnreadCount); // ✅ must be before /:userId
 router.get('/:userId', getMessages);
 router.post('/', sendMessage);
 router.put('/read/:userId', markAsRead);
-router.get('/unread-count', getUnreadCount);
 router.post('/upload', chatFileUpload.single('file'), uploadFiles);
 router.delete('/conversation/:id', clearChat);
 

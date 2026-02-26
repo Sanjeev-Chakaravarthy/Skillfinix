@@ -4,27 +4,36 @@ const User = require('../models/User');
 const protect = async (req, res, next) => {
   let token;
 
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+  // 1. Try Authorization header (standard for API calls)
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith('Bearer')
+  ) {
+    token = req.headers.authorization.split(' ')[1];
+  }
+  // 2. Fallback: ?token= query param (needed for <a href> file downloads)
+  else if (req.query.token) {
+    token = req.query.token;
+  }
+
+  if (token) {
     try {
-      // Get token from header
-      token = req.headers.authorization.split(' ')[1];
-
-      // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const user = await User.findById(decoded.id).select('-password');
 
-      // Get user from the token
-      req.user = await User.findById(decoded.id).select('-password');
+      if (!user) {
+        return res.status(401).json({ message: 'Not authorized, user no longer exists' });
+      }
 
-      next();
+      req.user = user;
+      return next();
     } catch (error) {
-      console.log(error);
-      res.status(401).json({ message: 'Not authorized' });
+      console.error('Auth middleware error:', error.message);
+      return res.status(401).json({ message: 'Not authorized, token invalid or expired' });
     }
   }
 
-  if (!token) {
-    res.status(401).json({ message: 'Not authorized, no token' });
-  }
+  return res.status(401).json({ message: 'Not authorized, no token provided' });
 };
 
 module.exports = { protect };

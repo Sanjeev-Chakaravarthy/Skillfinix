@@ -9,7 +9,7 @@ cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
-  timeout: 600000, // 10 min timeout for large uploads
+  timeout: 600000,
 });
 
 // General upload storage (Courses, etc)
@@ -19,7 +19,7 @@ const generalStorage = new CloudinaryStorage({
     folder: 'skillup-hub',
     resource_type: 'auto',
     allowed_formats: ['jpg', 'png', 'jpeg', 'mp4', 'mov', 'avi', 'mkv', 'webm'],
-    chunk_size: 6000000, // 6 MB chunk size for large videos
+    chunk_size: 6000000,
   },
 });
 
@@ -34,44 +34,15 @@ const avatarStorage = new CloudinaryStorage({
   },
 });
 
-// Chat file upload storage
-const chatStorage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: async (req, file) => {
-    let resourceType = 'image';
-    
-    if (file.mimetype.startsWith('video') || file.mimetype.startsWith('audio')) {
-      resourceType = 'video';
-    } else if (
-      file.mimetype === 'application/pdf' || 
-      file.mimetype.includes('application') ||
-      file.mimetype.includes('text')
-    ) {
-      resourceType = 'raw';
-    }
 
-    return {
-      folder: 'skillup-hub/chat',
-      resource_type: resourceType,
-      public_id: Date.now() + '-' + file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, '')
-    };
-  }
-});
-
-// Increase file size limits — allow up to 500MB for video uploads
-const upload = multer({ 
+const upload = multer({
   storage: generalStorage,
-  limits: { fileSize: 500 * 1024 * 1024 } // 500 MB
+  limits: { fileSize: 500 * 1024 * 1024 },
 });
 const uploadAvatar = multer({ storage: avatarStorage });
-const chatFileUpload = multer({ 
-  storage: chatStorage,
-  limits: { fileSize: 50 * 1024 * 1024 } // 50 MB
-});
 
 module.exports = {
   cloudinary,
   upload,
   uploadAvatar,
-  chatFileUpload
 };

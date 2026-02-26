@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const Report = require('../models/Report');
 
@@ -85,53 +86,86 @@ const generateToken = (id) => {
   });
 };
 
-// @desc    Block or unblock a user
+// @desc    Block or unblock a user (WhatsApp-style toggle)
 // @route   PUT /api/users/block/:id
 // @access  Private
 const blockUser = async (req, res) => {
   try {
-    const userIdToBlock = req.params.id;
+    const { id: userIdToBlock } = req.params;
+
+    // Guard: auth middleware must have attached req.user
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ message: 'Not authorized — please log in again' });
+    }
+
     const currentUserId = req.user._id.toString();
 
-    console.log('Blocking request:', { from: currentUserId, to: userIdToBlock });
-
-    if (!userIdToBlock || userIdToBlock === 'undefined') {
-      return res.status(400).json({ message: 'Target user ID is missing' });
+    // Guard: valid target ID present
+    if (!userIdToBlock || ['undefined', 'null', ''].includes(userIdToBlock)) {
+      return res.status(400).json({ message: 'Target user ID is required' });
     }
 
-    const user = await User.findById(req.user._id);
-    if (!user) {
-      return res.status(404).json({ message: 'Current user not found' });
+    // Guard: validate target ID is a valid MongoDB ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(userIdToBlock)) {
+      return res.status(400).json({ message: 'Invalid target user ID format' });
     }
 
+    // Guard: can't block yourself
     if (userIdToBlock === currentUserId) {
       return res.status(400).json({ message: 'You cannot block yourself' });
     }
 
-    // Ensure array exists
-    if (!user.blockedUsers) {
-      user.blockedUsers = [];
+    // Read current block state — lean query, no Mongoose overhead
+    const currentUser = await User.findById(currentUserId).select('blockedUsers').lean();
+    if (!currentUser) {
+      return res.status(404).json({ message: 'Your account was not found' });
     }
 
-    const isBlocked = (user.blockedUsers || []).some(id => id && id.toString() === userIdToBlock.toString());
+    // Guard: verify target user actually exists
+    const targetExists = await User.exists({ _id: userIdToBlock });
+    if (!targetExists) {
+      return res.status(404).json({ message: 'User to block/unblock was not found' });
+    }
 
-    if (isBlocked) {
-      // Unblock
-      user.blockedUsers = (user.blockedUsers || []).filter(id => id && id.toString() !== userIdToBlock.toString());
+    const isCurrentlyBlocked = (currentUser.blockedUsers || []).some(
+      (id) => id && id.toString() === userIdToBlock
+    );
+
+    // ✅ Atomic update — does NOT trigger full Mongoose schema validation.
+    // This prevents failures caused by invalid enum values in OTHER fields
+    // (e.g. role: 'developver' typo) from breaking the block operation.
+    if (isCurrentlyBlocked) {
+      await User.findByIdAndUpdate(
+        currentUserId,
+        { $pull: { blockedUsers: new mongoose.Types.ObjectId(userIdToBlock) } },
+        { runValidators: false }
+      );
     } else {
-      // Block
-      user.blockedUsers.push(userIdToBlock);
+      await User.findByIdAndUpdate(
+        currentUserId,
+        { $addToSet: { blockedUsers: new mongoose.Types.ObjectId(userIdToBlock) } },
+        { runValidators: false }
+      );
     }
 
-    await user.save();
-    res.status(200).json({ 
-      success: true, 
-      message: isBlocked ? 'User unblocked' : 'User blocked',
-      isBlocked: !isBlocked
+    const action = isCurrentlyBlocked ? 'unblocked' : 'blocked';
+    console.log(`✅ [Block] ${currentUserId} ${action} ${userIdToBlock}`);
+
+    return res.status(200).json({
+      success: true,
+      message: `User ${action} successfully`,
+      isBlocked: !isCurrentlyBlocked,
     });
   } catch (error) {
-    console.error('Error blocking user:', error);
-    res.status(500).json({ message: 'Server Error', details: error.message });
+    console.error('💥 [Block Error]:', error.name, '-', error.message);
+    // CastError means an invalid ObjectId slipped through — return 400 not 500
+    if (error.name === 'CastError') {
+      return res.status(400).json({ message: 'Invalid user ID provided' });
+    }
+    return res.status(500).json({
+      message: 'Server error — failed to update block status',
+      details: error.message,
+    });
   }
 };
 

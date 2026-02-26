@@ -142,7 +142,7 @@ const getMessages = async (req, res) => {
 // @route   POST /api/chat/messages
 const sendMessage = async (req, res) => {
   try {
-    const { receiverId, text, fileUrl, fileType } = req.body;
+    const { receiverId, text, fileUrl, fileType, fileName, fileMimetype } = req.body;
 
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('📨 API: Send message request');
@@ -201,26 +201,16 @@ const sendMessage = async (req, res) => {
     const messageData = {
       sender: req.user._id,
       receiver: receiverId,
-      // ✅ Set delivered: true ONLY if receiver is online
       delivered: isReceiverOnline,
       fileType: fileType || 'text'
     };
 
-    if (isReceiverOnline) {
-      messageData.deliveredAt = new Date();
-    }
-
-    if (text) {
-      messageData.text = text.trim();
-    }
-
-    if (fileUrl) {
-      messageData.fileUrl = fileUrl;
-    }
-
-    if (expiresAt) {
-      messageData.expiresAt = expiresAt;
-    }
+    if (isReceiverOnline) messageData.deliveredAt = new Date();
+    if (text) messageData.text = text.trim();
+    if (fileUrl) messageData.fileUrl = fileUrl;
+    if (fileName) messageData.fileName = fileName;           // ✅ store original filename
+    if (fileMimetype) messageData.fileMimetype = fileMimetype; // ✅ store real MIME type
+    if (expiresAt) messageData.expiresAt = expiresAt;
 
     const message = await Message.create(messageData);
 
@@ -333,29 +323,37 @@ const getUnreadCount = async (req, res) => {
 const uploadFiles = async (req, res) => {
   try {
     console.log('📤 File upload request received');
-    
+
     if (!req.file) {
       return res.status(400).json({ message: 'No file uploaded' });
     }
 
     const file = req.file;
-    console.log('Processing file:', file.originalname, file.mimetype);
-    
+    console.log('✅ File received in buffer:', file.originalname, file.mimetype, file.size, 'bytes');
+
+    const { uploadFileToSupabase } = require('../config/supabase');
+
+    const result = await uploadFileToSupabase(file);
+    console.log('✅ File uploaded to Supabase:', result.url);
+
+    // Derive UI fileType from mimetype
+    const uiType = file.mimetype.startsWith('image/') ? 'image'
+                 : file.mimetype.startsWith('video/') ? 'video'
+                 : file.mimetype.startsWith('audio/') ? 'audio'
+                 : 'file';
+
     const fileData = {
-      filename: file.originalname,
-      url: file.path, // Cloudinary URL automatically bound
-      type: file.mimetype.startsWith('image/') ? 'image' 
-          : file.mimetype.startsWith('video/') ? 'video'
-          : file.mimetype.startsWith('audio/') ? 'audio'
-          : 'file',
+      filename: file.originalname,   // ✅ original name with extension
+      mimetype: file.mimetype,       // ✅ real MIME type
+      url: result.url,               // ✅ Supabase public URL
+      type: uiType,
       size: file.size
     };
 
-    console.log('✅ File processed');
-    res.json({ files: [fileData] }); // keep legacy array format for seamless frontend fallback
+    res.status(200).json({ files: [fileData] });
   } catch (error) {
-    console.error('Error uploading file:', error);
-    res.status(500).json({ message: error.message });
+    console.error('UPLOAD ERROR:', error);
+    res.status(500).json({ message: 'Upload failed' });
   }
 };
 
@@ -529,6 +527,7 @@ const deleteChat = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
 
 module.exports = {
   getConversations,

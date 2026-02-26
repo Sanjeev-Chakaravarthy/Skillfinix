@@ -210,6 +210,13 @@ const SkillChat = () => {
     const userId = selectedChat.user._id;
     console.log('🔄 CHAT CHANGED - Loading messages for:', userId);
     
+    // Reset individual chat feature states to prevent "ghosting" from previous chat
+    setIsBlocked(selectedChat.isBlocked || false);
+    setHasBlockedMe(selectedChat.hasBlockedMe || false);
+    setIsMuted(false);
+    setIsFavorite(false);
+    setDisappearingTimer(0);
+    
     setLoadingMessages(true);
     setMessages([]);
     
@@ -386,26 +393,32 @@ const SkillChat = () => {
     if (!selectedChat || dropdownActionLoading) return;
     const prevBlocked = isBlocked;
     const newBlockedState = !prevBlocked;
+    const targetUserId = selectedChat.user._id;
     
     try {
       setDropdownActionLoading('block');
-      setIsBlocked(newBlockedState); // Optimistic
+      setIsBlocked(newBlockedState); // Optimistic UI
       
       // Update conversations list immediately (Optimistic)
       setConversations(prev => prev.map(c => 
-        c.user._id === selectedChat.user._id 
+        c.user._id === targetUserId 
           ? { ...c, isBlocked: newBlockedState } 
           : c
       ));
 
-      const res = await api.put(`/users/block/${selectedChat.user._id}`);
+      // Update selectedChat local state if it's the one we're blocking
+      if (selectedChat.user._id === targetUserId) {
+        setSelectedChat(prev => ({ ...prev, isBlocked: newBlockedState }));
+      }
+
+      const res = await api.put(`/users/block/${targetUserId}`);
       
       const confirmedState = res.data.success ? res.data.isBlocked : newBlockedState;
       setIsBlocked(confirmedState);
       
-      // Sync confirmed state to conversations list
+      // Sync confirmed state to everything
       setConversations(prev => prev.map(c => 
-        c.user._id === selectedChat.user._id 
+        c.user._id === targetUserId 
           ? { ...c, isBlocked: confirmedState } 
           : c
       ));
@@ -414,16 +427,18 @@ const SkillChat = () => {
         toast({ title: res.data.message });
       }
       setBlockModalOpen(false);
+      setContactModalOpen(false); // WhatsApp closes info when blocking
     } catch (error) {
+      console.error('Error blocking user:', error);
       setIsBlocked(prevBlocked); // Rollback
       setConversations(prev => prev.map(c => 
-        c.user._id === selectedChat.user._id 
+        c.user._id === targetUserId 
           ? { ...c, isBlocked: prevBlocked } 
           : c
       ));
       toast({ 
         title: "Error blocking user", 
-        description: error.response?.data?.message || error.message,
+        description: error.response?.data?.message || "Failed to update block status",
         variant: "destructive" 
       });
     } finally {
@@ -479,26 +494,37 @@ const SkillChat = () => {
     if (!selectedChat || dropdownActionLoading) return;
     try {
       setDropdownActionLoading('report');
-      const messageIds = messages.slice(-5).map(m => m._id);
+      // 🔥 FIX: Filter out temp messages with tempId to avoid MongoDB ObjectId validation errors
+      const validMessages = messages.filter(m => !m.tempId && !m._id.startsWith('temp_'));
+      const messageIds = validMessages.slice(-5).map(m => m._id);
+      
       await api.post('/reports', {
         reportedUserId: selectedChat.user._id,
         reason: reason || 'Report from SkillChat',
         messageIds
       });
-      toast({ title: "User reported", description: "The admin will review this report." });
+
+      toast({ 
+        title: "User reported", 
+        description: blockAndClear ? "User reported, blocked, and chat cleared." : "The admin will review this report." 
+      });
+      
       setReportModalOpen(false);
       setContactModalOpen(false);
 
       // If "Block and Clear" was checked, do it now
       if (blockAndClear) {
-        // We wait for these to complete
-        await handleBlockUser(); 
+        // WhatsApp behavior: Block First, Then Clear
+        if (!isBlocked) {
+          await handleBlockUser(); 
+        }
         await handleClearChat();
       }
     } catch (error) {
+      console.error('Error reporting user:', error);
       toast({ 
         title: "Error reporting user", 
-        description: error.response?.data?.message || error.message,
+        description: error.response?.data?.message || "Something went wrong while reporting",
         variant: "destructive" 
       });
     } finally {
@@ -972,7 +998,10 @@ const SkillChat = () => {
 
   const sendVoiceMessage = async (audioBlob) => {
     if (!selectedChat) return;
-    
+
+    // ✅ Declare tempId OUTSIDE try so catch block can reference it
+    const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
     try {
       setSending(true);
       
@@ -985,7 +1014,6 @@ const SkillChat = () => {
       const filename = `voice_${Date.now()}.${extension}`;
       formData.append('file', audioBlob, filename);
       
-      const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const localPreviewUrl = URL.createObjectURL(audioBlob);
       
       const optimisticMessage = {
@@ -1075,6 +1103,9 @@ const SkillChat = () => {
     if (!selectedChat) return;
     if (!messageInput.trim() && selectedFiles.length === 0) return;
 
+    // ✅ Declare tempId OUTSIDE try so catch block can reference it
+    const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
     try {
       setSending(true);
 
@@ -1092,7 +1123,6 @@ const SkillChat = () => {
       }
 
       const messageText = messageInput.trim();
-      const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
       // ✅ Optimistic message directly to UI
       const optimisticMessage = {
@@ -1116,20 +1146,27 @@ const SkillChat = () => {
 
       let fileUrl = null;
       let finalFileType = uiFileType;
+      let finalFileName = selectedFile?.name || null;
+      let finalMimetype = selectedFile?.type || null;
+
       if (selectedFile) {
         const uploadedFiles = await uploadFiles([selectedFile]);
         if (uploadedFiles.length > 0) {
-          fileUrl = uploadedFiles[0].url;
-          finalFileType = uploadedFiles[0].type || uiFileType;
+          fileUrl        = uploadedFiles[0].url;
+          finalFileType  = uploadedFiles[0].type || uiFileType;
+          finalFileName  = uploadedFiles[0].filename || finalFileName;  // ✅ from server
+          finalMimetype  = uploadedFiles[0].mimetype || finalMimetype;  // ✅ from server
         }
       }
 
-      // ✅ API call 
+      // ✅ API call
       const res = await api.post('/messages', {
         receiverId: selectedChat.user._id,
         text: messageText,
         fileUrl,
-        fileType: finalFileType
+        fileType:     finalFileType,
+        fileName:     finalFileName,     // ✅ stored in DB
+        fileMimetype: finalMimetype,     // ✅ stored in DB
       });
 
       const serverMessage = {
@@ -1309,9 +1346,16 @@ const SkillChat = () => {
                 )}
               </div>
               <div>
-                <h3 className="font-medium text-foreground">{selectedChat.user.name}</h3>
-                <p className="text-xs text-muted-foreground">
-                  {(isOnline(selectedChat.user._id) && !isBlocked && !hasBlockedMe) ? 'Online' : 'Offline'}
+                <h3 className="font-medium text-foreground leading-tight cursor-pointer hover:text-primary transition-colors" onClick={() => setContactModalOpen(true)}>
+                  {selectedChat.user.name}
+                </h3>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {(isOnline(selectedChat.user._id) && !isBlocked && !hasBlockedMe) ? (
+                    <span className="flex items-center gap-1 text-green-500 font-medium">
+                      <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                      Online
+                    </span>
+                  ) : 'Offline'}
                 </p>
               </div>
             </div>
@@ -1489,9 +1533,12 @@ const SkillChat = () => {
                     )}
                     {!isMe && !selectionMode && (
                       <img
-                        src={message.sender.avatar}
+                        src={(isBlocked || hasBlockedMe) ? 'https://cdn-icons-png.flaticon.com/512/149/149071.png' : message.sender.avatar}
                         alt={message.sender.name}
-                        className="object-cover w-8 h-8 rounded-full"
+                        className={cn(
+                          "object-cover w-8 h-8 rounded-full",
+                          (isBlocked || hasBlockedMe) && "grayscale-[0.5]"
+                        )}
                       />
                     )}
                     <div className={cn(
@@ -1504,7 +1551,8 @@ const SkillChat = () => {
                             attachment={{
                               url: message.fileUrl,
                               type: message.fileType,
-                              filename: message.fileUrl.split('/').pop()
+                              filename: message.fileName || message.fileUrl.split('/').pop(),
+                              mimetype: message.fileMimetype || null,
                             }} 
                             isMe={isMe}
                             onImageClick={handleImageClick}
@@ -2139,6 +2187,27 @@ const AttachmentPreview = ({ attachment, isMe, onImageClick }) => {
   }
 
   // Generic document or file
+  const isPdf =
+    attachment.filename?.toLowerCase().endsWith('.pdf') ||
+    attachment.url?.toLowerCase().includes('.pdf');
+
+  const handleOpen = (e) => {
+    e.preventDefault();
+    const filename = attachment.filename || attachment.url?.split('/').pop() || 'file';
+    // For Supabase (and any direct public URL): open in new tab.
+    // The browser will download it if Content-Disposition: attachment is set,
+    // or display it inline (e.g. images). Either way no blank page.
+    const link = document.createElement('a');
+    link.href = attachment.url;
+    link.download = filename;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+
+
   return (
     <div className={cn(
       "flex items-center gap-3 p-3 rounded-xl shadow-sm border",
@@ -2160,18 +2229,18 @@ const AttachmentPreview = ({ attachment, isMe, onImageClick }) => {
           </span>
         )}
       </div>
-      <a
-        href={attachment.url}
-        download
-        target="_blank"
-        rel="noopener noreferrer"
+      {/* ✅ Click → always downloads via Cloudinary fl_attachment flag */}
+      <button
+        type="button"
+        onClick={handleOpen}
         className={cn(
           "w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors",
           isMe ? "bg-primary text-primary-foreground hover:bg-primary/90" : "bg-muted hover:bg-muted/80 text-foreground"
         )}
+        title="Download File"
       >
         <Download className="w-4 h-4" />
-      </a>
+      </button>
     </div>
   );
 };

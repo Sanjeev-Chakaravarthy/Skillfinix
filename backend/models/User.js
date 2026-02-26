@@ -19,7 +19,7 @@ const userSchema = mongoose.Schema({
   },
 
   // Only two roles: user and admin (no mentor)
-  role: { type: String, enum: ['user', 'student', 'admin'], default: 'user' },
+  role: { type: String, enum: ['user', 'student', 'admin'], default: 'user', lowercase: true },
 
   location: { type: String, default: 'Earth' },
   

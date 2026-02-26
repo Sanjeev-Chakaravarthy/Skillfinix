@@ -110,7 +110,7 @@ const Barters = () => {
 
     try {
       // Send the connection request as a chat message
-      await api.post('/chat/messages', {
+      await api.post('/messages', {
         receiverId: selectedUser._id,
         text: messageText.trim()
       });
