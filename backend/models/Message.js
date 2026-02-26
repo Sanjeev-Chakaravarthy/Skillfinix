@@ -19,6 +19,12 @@ const messageSchema = new mongoose.Schema(
     fileUrl: {
       type: String
     },
+    fileName: {
+      type: String   // original filename e.g. "DBMS.pdf"
+    },
+    fileMimetype: {
+      type: String   // e.g. "application/pdf"
+    },
     fileType: {
       type: String,
       enum: ['text', 'image', 'video', 'audio', 'document', 'file'],
