@@ -37,8 +37,7 @@ const communitySchema = new mongoose.Schema({
     index: true
   },
   coverImage: {
-    type: String,
-    default: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&q=80&w=1000'
+    type: String
   },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,

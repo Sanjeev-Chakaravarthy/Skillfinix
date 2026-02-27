@@ -71,7 +71,7 @@ const Navbar = () => {
 
   const handleLogout = () => {
     logout();
-    navigate("/login");
+    navigate("/welcome");
     setShowProfileMenu(false);
   };
 
