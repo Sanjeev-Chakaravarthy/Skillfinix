@@ -24,7 +24,11 @@ const userSchema = mongoose.Schema({
   location: { type: String, default: 'Earth' },
   
   // Array of blocked users
-  blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
+  blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+
+  // Follow system
+  followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
 }, { timestamps: true });
 
 // ── Indexes for production query performance ──────────────────────────────────
