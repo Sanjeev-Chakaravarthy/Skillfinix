@@ -54,7 +54,14 @@ const getCommunity = async (req, res) => {
 // @access  Private
 const createCommunity = async (req, res) => {
   try {
-    const { name, description, category, coverImage } = req.body;
+    const { name, description, category } = req.body;
+    let coverImage = req.body.coverImage;
+
+    // If multer processed a file upload, use that path instead of body
+    if (req.file) {
+      const backendUrl = process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
+      coverImage = `${backendUrl}/uploads/communities/${req.file.filename}`;
+    }
 
     const exists = await Community.findOne({ name });
     if (exists) {
@@ -71,6 +78,79 @@ const createCommunity = async (req, res) => {
     });
 
     res.status(201).json(community);
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error: ' + error.message });
+  }
+};
+
+// @desc    Update community
+// @route   PUT /api/communities/:id
+// @access  Private
+const updateCommunity = async (req, res) => {
+  try {
+    const community = await Community.findById(req.params.id);
+
+    if (!community) {
+      return res.status(404).json({ message: 'Community not found' });
+    }
+
+    // Check user ownership
+    if (community.createdBy.toString() !== req.user.id) {
+      return res.status(401).json({ message: 'User not authorized to update this community' });
+    }
+
+    const { name, description, category } = req.body;
+    let coverImage = req.body.coverImage;
+
+    // If multer processed a new file upload, use the new path
+    if (req.file) {
+      const backendUrl = process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
+      coverImage = `${backendUrl}/uploads/communities/${req.file.filename}`;
+    }
+
+    // Check if new name exists
+    if (name && name !== community.name) {
+      const exists = await Community.findOne({ name });
+      if (exists) {
+        return res.status(400).json({ message: 'Community name already exists' });
+      }
+    }
+
+    community.name = name || community.name;
+    community.description = description || community.description;
+    community.category = category || community.category;
+    
+    // Explicitly allow clearing string if coverImage is somehow overridden to empty, 
+    // but typically we pass the new URL.
+    if (coverImage !== undefined) {
+      community.coverImage = coverImage;
+    }
+
+    const updatedCommunity = await community.save();
+    res.status(200).json(updatedCommunity);
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error: ' + error.message });
+  }
+};
+
+// @desc    Delete community
+// @route   DELETE /api/communities/:id
+// @access  Private
+const deleteCommunity = async (req, res) => {
+  try {
+    const community = await Community.findById(req.params.id);
+
+    if (!community) {
+      return res.status(404).json({ message: 'Community not found' });
+    }
+
+    // Check user ownership
+    if (community.createdBy.toString() !== req.user.id) {
+      return res.status(401).json({ message: 'User not authorized to delete this community' });
+    }
+
+    await community.deleteOne();
+    res.status(200).json({ id: req.params.id, message: 'Community removed' });
   } catch (error) {
     res.status(500).json({ message: 'Server Error: ' + error.message });
   }
@@ -185,6 +265,8 @@ module.exports = {
   getCommunities,
   getCommunity,
   createCommunity,
+  updateCommunity,
+  deleteCommunity,
   toggleJoinCommunity,
   addPost,
   togglePostLike

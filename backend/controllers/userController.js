@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const User = require('../models/User');
 const Report = require('../models/Report');
+const Conversation = require('../models/Conversation');
 
 // @desc    Get users for bartering (excluding current user)
 // @route   GET /api/users/barters
@@ -169,6 +170,32 @@ const blockUser = async (req, res) => {
   }
 };
 
+// @desc    Get a single user's public profile by ID
+// @route   GET /api/users/:id
+// @access  Public
+const getUserById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid user ID format' });
+    }
+
+    const user = await User.findById(id)
+      .select('-password -blockedUsers')
+      .lean();
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.status(200).json(user);
+  } catch (error) {
+    console.error('Error fetching user by ID:', error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
 // @desc    Report a user
 // @route   POST /api/users/report
 // @access  Private
@@ -191,9 +218,148 @@ const reportUser = async (req, res) => {
   }
 };
 
+// @desc    Follow / Unfollow a user (toggle)
+// @route   POST /api/users/:id/follow
+// @access  Private
+const followUser = async (req, res) => {
+  try {
+    const { id: targetUserId } = req.params;
+
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ message: 'Not authorized — please log in' });
+    }
+
+    const currentUserId = req.user._id.toString();
+
+    // Validate target ID
+    if (!targetUserId || ['undefined', 'null', ''].includes(targetUserId)) {
+      return res.status(400).json({ message: 'Target user ID is required' });
+    }
+    if (!mongoose.Types.ObjectId.isValid(targetUserId)) {
+      return res.status(400).json({ message: 'Invalid target user ID format' });
+    }
+
+    // Prevent self-follow
+    if (targetUserId === currentUserId) {
+      return res.status(400).json({ message: 'You cannot follow yourself' });
+    }
+
+    // Ensure both users exist
+    const [currentUser, targetUser] = await Promise.all([
+      User.findById(currentUserId).select('following'),
+      User.findById(targetUserId).select('followers name')
+    ]);
+
+    if (!currentUser) return res.status(404).json({ message: 'Your account was not found' });
+    if (!targetUser) return res.status(404).json({ message: 'User to follow was not found' });
+
+    const targetObjectId = new mongoose.Types.ObjectId(targetUserId);
+    const currentObjectId = new mongoose.Types.ObjectId(currentUserId);
+
+    const isFollowing = (currentUser.following || []).some(
+      (id) => id && id.toString() === targetUserId
+    );
+
+    if (isFollowing) {
+      // UNFOLLOW
+      await Promise.all([
+        User.findByIdAndUpdate(currentUserId, { $pull: { following: targetObjectId } }, { runValidators: false }),
+        User.findByIdAndUpdate(targetUserId, { $pull: { followers: currentObjectId } }, { runValidators: false })
+      ]);
+    } else {
+      // FOLLOW (addToSet prevents duplicates)
+      await Promise.all([
+        User.findByIdAndUpdate(currentUserId, { $addToSet: { following: targetObjectId } }, { runValidators: false }),
+        User.findByIdAndUpdate(targetUserId, { $addToSet: { followers: currentObjectId } }, { runValidators: false })
+      ]);
+    }
+
+    // Return updated follower count
+    const updatedTarget = await User.findById(targetUserId).select('followers');
+    const followerCount = updatedTarget?.followers?.length ?? 0;
+
+    const action = isFollowing ? 'unfollowed' : 'followed';
+    console.log(`✅ [Follow] ${currentUserId} ${action} ${targetUserId}`);
+
+    return res.status(200).json({
+      success: true,
+      message: `User ${action} successfully`,
+      isFollowing: !isFollowing,
+      followerCount
+    });
+  } catch (error) {
+    console.error('💥 [Follow Error]:', error.name, '-', error.message);
+    if (error.name === 'CastError') {
+      return res.status(400).json({ message: 'Invalid user ID provided' });
+    }
+    return res.status(500).json({ message: 'Server error — failed to update follow status' });
+  }
+};
+
+// @desc    Get or create a 1-to-1 conversation between current user and target
+// @route   POST /api/users/:id/conversation
+// @access  Private
+const getOrCreateConversation = async (req, res) => {
+  try {
+    const { id: targetUserId } = req.params;
+    const currentUserId = req.user._id.toString();
+
+    if (!targetUserId || !mongoose.Types.ObjectId.isValid(targetUserId)) {
+      return res.status(400).json({ message: 'Invalid target user ID' });
+    }
+
+    if (targetUserId === currentUserId) {
+      return res.status(400).json({ message: 'Cannot message yourself' });
+    }
+
+    const targetExists = await User.exists({ _id: targetUserId });
+    if (!targetExists) return res.status(404).json({ message: 'User not found' });
+
+    // Find existing conversation
+    let conversation = await Conversation.findOne({
+      participants: {
+        $all: [
+          new mongoose.Types.ObjectId(currentUserId),
+          new mongoose.Types.ObjectId(targetUserId)
+        ]
+      }
+    }).populate('participants', 'name avatar email');
+
+    if (!conversation) {
+      // Create new conversation
+      conversation = await Conversation.create({
+        participants: [
+          new mongoose.Types.ObjectId(currentUserId),
+          new mongoose.Types.ObjectId(targetUserId)
+        ],
+        settings: []
+      });
+      conversation = await Conversation.findById(conversation._id)
+        .populate('participants', 'name avatar email');
+    }
+
+    // Find the OTHER user's data to return to frontend
+    const otherUser = conversation.participants.find(
+      (p) => p._id.toString() !== currentUserId
+    );
+
+    return res.status(200).json({
+      success: true,
+      conversation,
+      otherUser
+    });
+  } catch (error) {
+    console.error('💥 [Conversation Error]:', error.message);
+    return res.status(500).json({ message: 'Server error — failed to get or create conversation' });
+  }
+};
+
 module.exports = {
   getBarterUsers,
   updateUserProfile,
   blockUser,
-  reportUser
+  reportUser,
+  getUserById,
+  followUser,
+  getOrCreateConversation
 };

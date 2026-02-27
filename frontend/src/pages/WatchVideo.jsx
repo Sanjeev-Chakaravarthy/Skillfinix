@@ -83,15 +83,21 @@ const WatchVideo = () => {
     }
   };
 
-  const handleRequestSwap = () => {
+  const handleRequestSwap = async () => {
     if (!course?.user) return;
-    // Redirect to SkillChat to start negotiation or swap page
-    navigate('/skill-chat', { state: { selectedUserId: course.user, message: `Hi! I found your skill session "${course.title}" and would love to propose a skill swap.` }});
-  };
-
-  const handleMessageClick = () => {
-    if (!course?.user) return;
-    navigate('/skill-chat', { state: { selectedUserId: course.user }});
+    try {
+      // Setup conversation first
+      const { data } = await api.post(`/users/${course.user}/conversation`);
+      navigate('/skill-chat', { 
+        state: { 
+          selectedUserId: course.user,
+          selectedUserData: data.otherUser,
+          message: `Hi! I found your skill session "${course.title}" and would love to propose a skill swap.` 
+        }
+      });
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to open chat for swap request.", variant: "destructive" });
+    }
   };
 
   return (
@@ -123,7 +129,7 @@ const WatchVideo = () => {
             </div>
 
             {/* Profile Bar */}
-            <SkillOwnerCard course={course} onMessageClick={handleMessageClick} />
+            <SkillOwnerCard course={course} />
 
             {/* Expandable Description */}
             {course.description && (
