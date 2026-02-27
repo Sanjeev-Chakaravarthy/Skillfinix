@@ -37,10 +37,13 @@ const LiveSessions  = lazy(() => import("@/pages/LiveSessions"));
 const Support       = lazy(() => import("@/pages/Support"));
 const MySwaps       = lazy(() => import("@/pages/MySwaps"));
 const Communities   = lazy(() => import("@/pages/Communities"));
+const CommunityDetail = lazy(() => import("@/pages/CommunityDetail"));
 const UploadVideo   = lazy(() => import("@/pages/UploadVideo"));
 const NotFound      = lazy(() => import("@/pages/NotFound"));
 const Login         = lazy(() => import("@/pages/Login"));
 const Signup        = lazy(() => import("@/pages/Signup"));
+const Welcome       = lazy(() => import("@/pages/Welcome"));
+const ProfilePage   = lazy(() => import("@/pages/ProfilePage"));
 
 // Separate standalone pages
 const Videos        = lazy(() => import("@/pages/Videos"));
@@ -97,11 +100,15 @@ const AuthLayout = () => {
   const { user, loading } = useAuth();
   if (loading) return <PageLoader />;
   if (user) return <Navigate to="/" replace />;
-  return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Outlet />
-    </div>
-  );
+  return <Outlet />;
+};
+
+// ─── Welcome Layout (entirely public, no chrome) ──────────────────────────────
+const WelcomeLayout = () => {
+  const { user, loading } = useAuth();
+  if (loading) return <div className="h-screen" />;
+  if (user) return <Navigate to="/" replace />;
+  return <Outlet />;
 };
 
 // ─── Coming Soon placeholder ──────────────────────────────────────────────────
@@ -128,6 +135,11 @@ const App = () => (
 
               <Suspense fallback={<PageLoader />}>
                 <Routes>
+                  {/* ── Welcome Landing Page (public, no chrome) ─── */}
+                  <Route element={<WelcomeLayout />}>
+                    <Route path="/welcome" element={<Welcome />} />
+                  </Route>
+
                   {/* ── Public Auth Routes ─────────────────── */}
                   <Route element={<AuthLayout />}>
                     <Route path="/login"  element={<Login />} />
@@ -166,9 +178,11 @@ const App = () => (
                     <Route path="/support"        element={<Support />} />
                     <Route path="/my-swaps"       element={<MySwaps />} />
                     <Route path="/communities"    element={<Communities />} />
+                    <Route path="/communities/:id" element={<CommunityDetail />} />
 
                     {/* Profile & Settings */}
                     <Route path="/profile"  element={<Profile />} />
+                    <Route path="/profile/:id" element={<ProfilePage />} />
                     <Route path="/settings" element={<Settings />} />
                     <Route path="/upload"   element={<UploadVideo />} />
 

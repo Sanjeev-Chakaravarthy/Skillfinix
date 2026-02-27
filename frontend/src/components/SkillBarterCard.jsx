@@ -1,5 +1,6 @@
 import React from "react";
 import { MessageCircle, MapPin, Briefcase } from "lucide-react";
+import { Link } from "react-router-dom";
 import { CustomButton } from "./CustomButton";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -7,6 +8,12 @@ import { motion } from "framer-motion";
 const SkillBarterCard = ({ user, className, onConnect, onMessage }) => {
   const skills = user.skills || [];
   const interests = user.interests || [];
+
+  // Resolve the MongoDB _id safely — handles both string IDs and ObjectId objects
+  const userId = user?._id?.toString?.() || user?._id || null;
+
+  // Debug: log the userId to verify it's always a valid string
+  console.log("[SkillBarterCard] userId:", userId, "| name:", user?.name);
 
   // Helper to fix image URL
   const getAvatarUrl = (avatarPath) => {
@@ -23,20 +30,39 @@ const SkillBarterCard = ({ user, className, onConnect, onMessage }) => {
         className
       )}
     >
-      {/* Header */}
+      {/* Header — avatar + name are clickable links to the user's profile */}
       <div className="flex items-start gap-4">
         <div className="relative shrink-0">
-          <img
-            src={getAvatarUrl(user.avatar)}
-            alt={user.name}
-            className="object-cover border w-14 h-14 rounded-xl border-border bg-muted"
-          />
+          {userId ? (
+            <Link to={`/profile/${userId}`} className="block rounded-xl overflow-hidden ring-0 hover:ring-2 hover:ring-primary/40 transition-all">
+              <img
+                src={getAvatarUrl(user.avatar)}
+                alt={user.name}
+                className="object-cover border w-14 h-14 rounded-xl border-border bg-muted group-hover:scale-105 transition-transform duration-300"
+              />
+            </Link>
+          ) : (
+            <img
+              src={getAvatarUrl(user.avatar)}
+              alt={user.name}
+              className="object-cover border w-14 h-14 rounded-xl border-border bg-muted"
+            />
+          )}
         </div>
 
         <div className="flex-1 min-w-0 pt-0.5">
-          <h4 className="text-base font-semibold truncate font-heading text-foreground">
-            {user.name}
-          </h4>
+          {userId ? (
+            <Link
+              to={`/profile/${userId}`}
+              className="text-base font-semibold truncate font-heading text-foreground hover:text-primary transition-colors block"
+            >
+              {user.name}
+            </Link>
+          ) : (
+            <h4 className="text-base font-semibold truncate font-heading text-foreground">
+              {user.name}
+            </h4>
+          )}
           
           {/* Metadata Section */}
           <div className="flex flex-col gap-1 mt-1">

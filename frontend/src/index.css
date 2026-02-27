@@ -227,7 +227,72 @@
   .skeleton-pulse {
     @apply rounded animate-pulse bg-muted;
   }
+
+  /* ── Premium card: soft border + layered shadow + hover lift ── */
+  .card-elevated {
+    @apply bg-card border border-border rounded-2xl transition-all duration-300;
+    box-shadow: var(--shadow-card);
+  }
+
+  .card-elevated:hover {
+    box-shadow: var(--shadow-card-hover);
+    transform: translateY(-2px);
+  }
+
+  /* ── Section header: consistent rhythm across all sections ── */
+  .section-header {
+    @apply flex items-center justify-between mb-5;
+  }
+
+  .section-title {
+    @apply text-lg font-heading font-semibold text-foreground tracking-tight;
+  }
+
+  .section-link {
+    @apply text-sm font-medium text-primary hover:underline flex items-center gap-1 transition-opacity hover:opacity-80;
+  }
+
+  /* ── Heading with negative tracking for premium feel ── */
+  .heading-display {
+    @apply font-heading font-bold tracking-tight antialiased;
+    letter-spacing: -0.02em;
+  }
+
+  .heading-section {
+    @apply font-heading font-semibold tracking-tight antialiased;
+    letter-spacing: -0.01em;
+  }
+
+  /* ── Stat pill inside hero ── */
+  .stat-pill {
+    @apply flex flex-col;
+  }
+
+  .stat-pill-value {
+    @apply text-2xl font-bold font-heading tracking-tight;
+    letter-spacing: -0.02em;
+  }
+
+  /* ── Category pill ── */
+  .category-pill {
+    @apply flex-shrink-0 px-4 py-2 rounded-xl bg-card border border-border hover:border-primary/40 hover:bg-accent/50 transition-all duration-200 text-sm font-medium text-foreground hover:shadow-sm cursor-pointer;
+  }
+
+  /* ── Sidebar nav active indicator ── */
+  .nav-active-dot {
+    @apply ml-auto w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0;
+  }
+
+  /* ── Glass hero overlay ── */
+  .hero-glass-badge {
+    @apply inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-sm font-medium;
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.20);
+    backdrop-filter: blur(8px);
+    color: #fff;
+  }
 }
+
 
 @layer utilities {
   .scrollbar-hide {
@@ -255,4 +320,310 @@
   .scrollbar-thin::-webkit-scrollbar-thumb {
     @apply rounded-full bg-muted-foreground/20 hover:bg-muted-foreground/30;
   }
+}
+
+/* ══════════════════════════════════════════════════
+   SKILLFINIX WELCOME PAGE — Custom Animations
+   ══════════════════════════════════════════════════ */
+
+@keyframes sf-float {
+
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+
+  33% {
+    transform: translateY(-8px) rotate(0.5deg);
+  }
+
+  66% {
+    transform: translateY(-4px) rotate(-0.5deg);
+  }
+}
+
+@keyframes sf-float-slow {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-14px);
+  }
+}
+
+@keyframes sf-glow-pulse {
+
+  0%,
+  100% {
+    box-shadow: 0 0 20px hsl(22 90% 54% / 0.25), 0 0 40px hsl(22 90% 54% / 0.10);
+  }
+
+  50% {
+    box-shadow: 0 0 35px hsl(22 90% 54% / 0.45), 0 0 70px hsl(22 90% 54% / 0.20);
+  }
+}
+
+@keyframes sf-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sf-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes sf-slide-left {
+  from {
+    opacity: 0;
+    transform: translateX(-32px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes sf-slide-right {
+  from {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes sf-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.88);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes sf-spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes sf-thread-draw {
+  from {
+    stroke-dashoffset: 600;
+    opacity: 0;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+@keyframes sf-node-appear {
+  0% {
+    opacity: 0;
+    transform: scale(0) translate(-50%, -50%);
+  }
+
+  60% {
+    opacity: 1;
+    transform: scale(1.15) translate(-43%, -43%);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1) translate(-50%, -50%);
+  }
+}
+
+@keyframes sf-tag-float-left {
+  from {
+    opacity: 0;
+    transform: translateX(-60px) rotate(-4deg);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0) rotate(-2deg);
+  }
+}
+
+@keyframes sf-tag-float-right {
+  from {
+    opacity: 0;
+    transform: translateX(60px) rotate(4deg);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0) rotate(2deg);
+  }
+}
+
+@keyframes sf-progress-fill {
+  from {
+    width: 0%;
+  }
+
+  to {
+    width: var(--progress-to);
+  }
+}
+
+@keyframes sf-shimmer {
+  0% {
+    background-position: -200% center;
+  }
+
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes sf-orbit {
+  from {
+    transform: rotate(0deg) translateX(90px) rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg) translateX(90px) rotate(-360deg);
+  }
+}
+
+/* Animation utility classes */
+.sf-animate-float {
+  animation: sf-float 6s ease-in-out infinite;
+}
+
+.sf-animate-float-slow {
+  animation: sf-float-slow 8s ease-in-out infinite;
+}
+
+.sf-animate-glow {
+  animation: sf-glow-pulse 3s ease-in-out infinite;
+}
+
+.sf-animate-spin-slow {
+  animation: sf-spin-slow 20s linear infinite;
+}
+
+.sf-fade-up {
+  opacity: 0;
+}
+
+.sf-fade-up.sf-visible {
+  animation: sf-fade-up 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.sf-slide-left {
+  opacity: 0;
+}
+
+.sf-slide-left.sf-visible {
+  animation: sf-slide-left 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.sf-slide-right {
+  opacity: 0;
+}
+
+.sf-slide-right.sf-visible {
+  animation: sf-slide-right 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.sf-scale-in {
+  opacity: 0;
+}
+
+.sf-scale-in.sf-visible {
+  animation: sf-scale-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.sf-delay-100 {
+  animation-delay: 0.10s !important;
+}
+
+.sf-delay-200 {
+  animation-delay: 0.20s !important;
+}
+
+.sf-delay-300 {
+  animation-delay: 0.30s !important;
+}
+
+.sf-delay-400 {
+  animation-delay: 0.40s !important;
+}
+
+.sf-delay-500 {
+  animation-delay: 0.55s !important;
+}
+
+.sf-delay-600 {
+  animation-delay: 0.70s !important;
+}
+
+/* Shimmer text — uses existing brand gradient-primary (indigo → violet) */
+.sf-shimmer-text {
+  background: var(--gradient-primary);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: sf-shimmer 3.5s linear infinite;
+}
+
+/* Welcome page nav scroll state — uses app dark background (foreground value) */
+.sf-nav-solid {
+  background: hsl(240 10% 10% / 0.96) !important;
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid hsl(240 10% 20%);
+}
+
+/* Skill tag pill */
+/* Skill tag pill — uses existing primary token */
+.sf-skill-tag {
+  background: hsl(var(--primary) / 0.08);
+  border: 1px solid hsl(var(--primary) / 0.20);
+  color: hsl(var(--primary));
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.sf-skill-tag:hover {
+  background: hsl(var(--primary) / 0.14);
+  border-color: hsl(var(--primary) / 0.40);
+  transform: translateY(-2px);
 }
