@@ -61,5 +61,5 @@ jobs:
         with:
           app-name: 'skillfinix'
           slot-name: 'Production'
-          package: .
+          package: ./backend
           
