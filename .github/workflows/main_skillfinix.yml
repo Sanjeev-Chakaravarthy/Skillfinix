@@ -1,71 +1,46 @@
-name: Build and deploy Node.js app to Azure Web App - skillfinix
+name: Deploy Backend to Azure - skillfinix
 
 on:
   push:
     branches:
       - main
-  workflow_dispatch:
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout code
+      # Checkout repo
       - uses: actions/checkout@v4
 
-      # Setup Node.js
-      - name: Set up Node.js
+      # Setup Node
+      - name: Setup Node
         uses: actions/setup-node@v3
         with:
-          node-version: '24.x'
+          node-version: '18.x'
 
-      # Install dependencies ONLY inside backend
-      - name: Install dependencies (backend)
+      # Install backend deps
+      - name: Install dependencies
         run: |
           cd backend
           npm install
 
-      # Optional build step
-      - name: Build backend (if needed)
+      # Move backend files to root (IMPORTANT FIX)
+      - name: Prepare deployment folder
         run: |
-          cd backend
-          npm run build --if-present
-
-      # Upload ONLY backend folder
-      - name: Upload backend artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-app
-          path: backend
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build
-
-    permissions:
-      id-token: write
-      contents: read
-
-    steps:
-      # Download artifact
-      - name: Download backend artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: backend-app
+          cp -r backend/* .
 
       # Azure login
-      - name: Login to Azure
+      - name: Azure Login
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_67E900615A6C44C58A6E8DF1D826C70B }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_4CEAE8FCC4B34436A16F8D86DA7BDC1A }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_237BAA35B1454675AAC2C86F6AD1EFA6 }}
 
-      # Deploy to Azure
-      - name: Deploy to Azure Web App
+      # Deploy
+      - name: Deploy to Azure
         uses: azure/webapps-deploy@v3
         with:
           app-name: skillfinix
-          slot-name: Production
           package: .
