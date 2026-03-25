@@ -10,27 +10,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout repo
       - uses: actions/checkout@v4
 
-      # Setup Node
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
           node-version: '22.x'
 
-      # Install backend deps
-      - name: Install dependencies
-        run: |
-          cd backend
-          npm install
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm install
 
-      # Move backend files to root (IMPORTANT FIX)
-      - name: Prepare deployment folder
-        run: |
-          cp -r backend/* .
-
-      # Azure login
       - name: Azure Login
         uses: azure/login@v2
         with:
@@ -38,9 +28,8 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_4CEAE8FCC4B34436A16F8D86DA7BDC1A }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_237BAA35B1454675AAC2C86F6AD1EFA6 }}
 
-      # Deploy
       - name: Deploy to Azure
         uses: azure/webapps-deploy@v3
         with:
           app-name: skillfinix
-          package: .
+          package: backend
