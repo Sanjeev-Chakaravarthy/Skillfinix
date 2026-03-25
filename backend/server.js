@@ -217,6 +217,11 @@ app.get('/api/skills/popular', async (req, res) => {
   }
 });
 
+// Health check route (important for Azure)
+app.get('/', (req, res) => {
+  res.status(200).send('Skillfinix backend running 🚀');
+});
+
 // Setup Socket Handler
 setupSocket(io, connectedUsers);
 
@@ -240,7 +245,7 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5005;
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`\n🚀 Server running on port ${PORT}`);
   console.log(`🔌 Socket.io ready for real-time chat`);
   console.log(`📁 Max upload size: 500MB`);
