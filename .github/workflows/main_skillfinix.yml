@@ -6,16 +6,17 @@ on:
       - main
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
-          node-version: '22.x'
+          node-version: '24.x'
 
       - name: Install backend dependencies
         working-directory: backend
@@ -28,7 +29,7 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_4CEAE8FCC4B34436A16F8D86DA7BDC1A }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_237BAA35B1454675AAC2C86F6AD1EFA6 }}
 
-      - name: Deploy to Azure
+      - name: Deploy backend ONLY
         uses: azure/webapps-deploy@v3
         with:
           app-name: skillfinix
