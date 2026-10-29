@@ -2229,7 +2229,7 @@ const AttachmentPreview = ({ attachment, isMe, onImageClick }) => {
           </span>
         )}
       </div>
-      {/* ✅ Click → always downloads via Cloudinary fl_attachment flag */}
+      {/* ✅ Click → downloads the file */}
       <button
         type="button"
         onClick={handleOpen}

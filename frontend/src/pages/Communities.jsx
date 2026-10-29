@@ -8,14 +8,11 @@ import api from "@/api/axios";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { Link } from "react-router-dom";
+import { resolveMediaUrl } from "@/config/api";
 
 /* ─── Image helper ───────────────────────────────────────────────── */
 const resolveImageUrl = (url) => {
-  if (!url) return "";
-  if (url.startsWith("/uploads")) {
-    return `http://localhost:5005${url}`;
-  }
-  return url;
+  return resolveMediaUrl(url, "");
 };
 
 /* ─── Category filter list ─────────────────────────────────────── */

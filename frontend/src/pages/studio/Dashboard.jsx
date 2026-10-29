@@ -28,17 +28,6 @@ import {
 } from "recharts";
 import api from "@/api/axios";
 
-// Mock chart data (since we don't store historical daily data yet)
-const viewsData = [
-  { name: "Mon", value: 400 },
-  { name: "Tue", value: 300 },
-  { name: "Wed", value: 550 },
-  { name: "Thu", value: 450 },
-  { name: "Fri", value: 600 },
-  { name: "Sat", value: 700 },
-  { name: "Sun", value: 800 },
-];
-
 const StatCard = ({ title, value, change, icon: Icon, trend }) => (
   <div className="p-6 bg-card border border-border rounded-xl">
     <div className="flex items-center justify-between mb-4">
@@ -64,29 +53,43 @@ const StudioDashboard = () => {
     totalCourses: 0,
     totalStudents: 0,
     totalWatchTime: 0,
+    ctr: '0.0',
+    viewsChange: '0%',
+    studentsChange: '0%',
+    watchTimeChange: '0%',
+    chartData: [],
     recentCourses: []
   });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [period, setPeriod] = useState('7d');
 
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
-        const { data } = await api.get('/courses/studio/analytics');
+        setLoading(true);
+        const { data } = await api.get(`/courses/studio/analytics?period=${period}`);
         setStats({
-            totalViews: data.totalViews,
-            totalCourses: data.totalCourses,
-            totalStudents: data.totalStudents,
-            totalWatchTime: (data.totalWatchTime / 3600).toFixed(1), // Convert seconds to hours
+            totalViews: data.totalViews || 0,
+            totalCourses: data.totalCourses || 0,
+            totalStudents: data.totalStudents || 0,
+            totalWatchTime: data.totalWatchTime ? (data.totalWatchTime / 3600).toFixed(1) : '0',
+            ctr: data.ctr || '0.0',
+            viewsChange: data.viewsChange || '0%',
+            studentsChange: data.studentsChange || '0%',
+            watchTimeChange: data.watchTimeChange || '0%',
+            chartData: data.chartData || [],
             recentCourses: data.courses ? data.courses.slice(0, 5) : []
         });
-      } catch (error) {
-        console.error("Error fetching studio analytics:", error);
+      } catch (err) {
+        console.error("Error fetching studio analytics:", err);
+        setError("Failed to load analytics.");
       } finally {
         setLoading(false);
       }
     };
     fetchAnalytics();
-  }, []);
+  }, [period]);
 
   if (loading) {
      return (
@@ -107,31 +110,31 @@ const StudioDashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
           title="Total Views" 
-          value={stats.totalViews} 
-          change="+12% vs last week" 
+          value={stats.totalViews.toLocaleString()} 
+          change={`${stats.viewsChange} vs last week`} 
           icon={Eye} 
-          trend="up" 
+          trend={stats.viewsChange.startsWith('-') ? 'down' : 'up'} 
         />
         <StatCard 
-          title="Total Watch Time (Hrs)" 
+          title="Watch Time (Hrs)" 
           value={stats.totalWatchTime} 
-          change="+5% vs last week" 
+          change={`${stats.watchTimeChange} vs last week`} 
           icon={Clock} 
-          trend="up" 
+          trend={stats.watchTimeChange.startsWith('-') ? 'down' : 'up'} 
         />
         <StatCard 
-          title="Total Students" 
-          value={stats.totalStudents} 
-          change="+18% vs last week" 
+          title="Total Barters" 
+          value={stats.totalStudents.toLocaleString()} 
+          change={`${stats.studentsChange} vs last week`} 
           icon={Users} 
-          trend="up" 
+          trend={stats.studentsChange.startsWith('-') ? 'down' : 'up'} 
         />
         <StatCard 
-          title="Avg. CTR (Est.)" 
-          value={`${((stats.totalViews / 100) || 0).toFixed(1)}%`} 
-          change="-2% vs last week" 
+          title="CTR" 
+          value={`${stats.ctr}%`} 
+          change="Conversion rate" 
           icon={TrendingUp} 
-          trend="down" 
+          trend={parseFloat(stats.ctr) > 0 ? 'up' : 'down'} 
         />
       </div>
 
@@ -140,15 +143,31 @@ const StudioDashboard = () => {
         <div className="lg:col-span-2 bg-card border border-border rounded-xl p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-bold">Analytics Overview</h2>
-            <select className="bg-muted border-none text-sm rounded-lg px-3 py-1 focus:ring-0">
-              <option>Last 7 days</option>
-              <option>Last 28 days</option>
-              <option>Last 90 days</option>
-            </select>
+            <div className="flex items-center gap-2">
+              {[
+                { label: 'Last hour', value: '1h' },
+                { label: 'Last 24 hrs', value: '24h' },
+                { label: 'Last 48 hrs', value: '48h' },
+                { label: 'Last 7 days', value: '7d' },
+              ].map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setPeriod(opt.value)}
+                  className={cn(
+                    "px-3 py-1.5 text-xs font-medium rounded-lg transition-all",
+                    period === opt.value
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={viewsData}>
+              <AreaChart data={stats.chartData}>
                 <defs>
                   <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>

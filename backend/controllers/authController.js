@@ -77,7 +77,7 @@ const loginUser = async (req, res) => {
   }
 };
 
-// @desc    Google Authentication with Cloudinary support
+// @desc    Google Authentication
 // @route   POST /api/auth/google
 const googleAuth = async (req, res) => {
   const { token } = req.body;
@@ -98,7 +98,7 @@ const googleAuth = async (req, res) => {
         _id: user._id,
         name: user.name,
         email: user.email,
-        avatar: user.avatar, // Keep existing avatar (might be Cloudinary URL)
+        avatar: user.avatar, // Keep existing avatar
         role: user.role,
         bio: user.bio,
         skills: user.skills,

@@ -1,25 +1,141 @@
-import React from "react";
-import { MessageCircle, MapPin, Briefcase } from "lucide-react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect, useCallback } from "react";
+import { MessageCircle, MapPin, Briefcase, UserPlus, UserCheck, Loader2 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { CustomButton } from "./CustomButton";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/components/ui/use-toast";
+import api from "@/api/axios";
+import { resolveMediaUrl } from "@/config/api";
 
-const SkillBarterCard = ({ user, className, onConnect, onMessage }) => {
-  const skills = user.skills || [];
-  const interests = user.interests || [];
+const SkillBarterCard = ({ user, className }) => {
+  const { user: currentUser } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [messageLoading, setMessageLoading] = useState(false);
+  const [statusLoaded, setStatusLoaded] = useState(false);
+
+  const skills = user?.skills || [];
+  const interests = user?.interests || [];
 
   // Resolve the MongoDB _id safely — handles both string IDs and ObjectId objects
-  const userId = user?._id?.toString?.() || user?._id || null;
+  const userId = user?._id?.toString?.() || user?._id || user?.id || null;
+  const isOwner =
+    currentUser?.id === userId ||
+    currentUser?._id === userId ||
+    currentUser?._id?.toString() === userId;
 
-  // Debug: log the userId to verify it's always a valid string
-  console.log("[SkillBarterCard] userId:", userId, "| name:", user?.name);
+  const fetchFollowStatus = useCallback(async () => {
+    if (!userId || isOwner || !currentUser) return;
+    try {
+      const { data } = await api.get(`/users/${userId}/follow-status`);
+      setIsFollowing(data.isFollowing ?? false);
+    } catch (err) {
+      console.warn("[SkillBarterCard] Could not load follow status:", err?.message);
+    } finally {
+      setStatusLoaded(true);
+    }
+  }, [userId, isOwner, currentUser]);
+
+  useEffect(() => {
+    setStatusLoaded(false);
+    fetchFollowStatus();
+  }, [fetchFollowStatus]);
+
+  const handleFollow = async (e) => {
+    e.preventDefault();
+    console.log("[handleFollow] Click fired");
+    console.log("[handleFollow] Target userId:", userId);
+
+    if (!currentUser) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to follow this user.",
+        variant: "destructive",
+      });
+      navigate("/login");
+      return;
+    }
+
+    if (!userId) {
+      console.error("[handleFollow] Error: userId is undefined or null");
+      toast({ title: "Error", description: "User not found.", variant: "destructive" });
+      return;
+    }
+
+    const prevFollowing = isFollowing;
+    setIsFollowing(!isFollowing);
+    setFollowLoading(true);
+
+    try {
+      console.log(`[handleFollow] Sending POST request to /api/users/${userId}/follow`);
+      const { data } = await api.post(`/users/${userId}/follow`);
+      console.log("[handleFollow] Success response:", data);
+      setIsFollowing(data.isFollowing);
+      
+      toast({
+        title: data.isFollowing ? "Following! 🎉" : "Unfollowed",
+        description: data.isFollowing
+          ? `You are now following ${user.name || "this user"}.`
+          : `You unfollowed ${user.name || "this user"}.`,
+      });
+    } catch (err) {
+      console.error("[handleFollow] Request failed:", err);
+      console.error("[handleFollow] Error response:", err.response?.data);
+      setIsFollowing(prevFollowing);
+      const msg = err?.response?.data?.message || "Failed to update follow status.";
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    } finally {
+      setFollowLoading(false);
+    }
+  };
+
+  const handleMessage = async (e) => {
+    e.preventDefault();
+    if (!currentUser) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to send a message.",
+        variant: "destructive",
+      });
+      navigate("/login");
+      return;
+    }
+
+    if (!userId) {
+      toast({ title: "Error", description: "User not found.", variant: "destructive" });
+      return;
+    }
+
+    setMessageLoading(true);
+    try {
+      // Create or ensure conversation exists properly
+      const { data: conversation } = await api.post(`/conversations`, { receiverId: userId });
+      
+      navigate(`/chat/${conversation._id}`, {
+        state: {
+          selectedUserId: userId,
+          selectedUserData: user,
+          conversationId: conversation?._id
+        },
+      });
+    } catch (err) {
+      const msg = err?.response?.data?.message || "Failed to open chat.";
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    } finally {
+      setMessageLoading(false);
+    }
+  };
+
+  if (!user) return null;
 
   // Helper to fix image URL
   const getAvatarUrl = (avatarPath) => {
-    if (!avatarPath) return "https://github.com/shadcn.png";
-    if (avatarPath.startsWith("http")) return avatarPath;
-    return `http://localhost:5005${avatarPath}`;
+    return resolveMediaUrl(avatarPath, "https://github.com/shadcn.png");
   };
 
   return (
@@ -148,23 +264,38 @@ const SkillBarterCard = ({ user, className, onConnect, onMessage }) => {
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-3 pt-4 mt-auto border-t border-border">
-        <button 
-          onClick={onMessage}
-          className="p-2 transition-colors border rounded-lg border-border hover:bg-muted text-muted-foreground hover:text-foreground hover:border-primary/50 group/btn"
-          title="Send Message"
-        >
-          <MessageCircle className="w-4 h-4 transition-colors group-hover/btn:text-primary" />
-        </button>
-        <CustomButton 
-          variant="gradient" 
-          size="sm" 
-          className="flex-1 h-9" 
-          onClick={() => onConnect(user._id)}
-        >
-          Connect
-        </CustomButton>
-      </div>
+      {!isOwner && (
+        <div className="flex items-center gap-3 pt-4 mt-auto border-t border-border">
+          <button 
+            onClick={handleMessage}
+            disabled={messageLoading}
+            className="p-2 transition-colors border rounded-lg border-border hover:bg-muted text-muted-foreground hover:text-foreground hover:border-primary/50 group/btn"
+            title="Send Message"
+          >
+            {messageLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+            ) : (
+              <MessageCircle className="w-4 h-4 transition-colors group-hover/btn:text-primary" />
+            )}
+          </button>
+          <CustomButton 
+            variant={isFollowing ? "outline" : "gradient"}
+            size="sm" 
+            className="flex-1 h-9 font-semibold" 
+            onClick={handleFollow}
+            disabled={followLoading}
+          >
+            {followLoading ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : isFollowing ? (
+              <UserCheck className="w-4 h-4 mr-2" />
+            ) : (
+              <UserPlus className="w-4 h-4 mr-2" />
+            )}
+            {followLoading ? "..." : isFollowing ? "Following" : "Follow"}
+          </CustomButton>
+        </div>
+      )}
     </motion.div>
   );
 };

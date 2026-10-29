@@ -19,10 +19,10 @@ const StudioSidebar = () => {
     return `https://ui-avatars.com/api/?name=${encodedName}&background=6366f1&color=fff&size=200&bold=true`;
   };
 
-  // Helper function to get proper avatar URL (works with Cloudinary)
+  // Helper function to get proper avatar URL
   const getAvatarUrl = (avatarPath) => {
     if (!avatarPath) return getDefaultAvatar(user?.name);
-    // If it's a full URL (Cloudinary, Google OAuth, etc.), use it directly
+    // If it's a full URL (Google OAuth, Supabase, etc.), use it directly
     if (avatarPath.startsWith("http")) return avatarPath;
     // Otherwise, return default
     return getDefaultAvatar(user?.name);

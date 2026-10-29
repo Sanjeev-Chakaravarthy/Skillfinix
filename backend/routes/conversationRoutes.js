@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const {
+  createConversation,
   getConversations,
   muteConversation,
   favouriteConversation,
@@ -11,6 +12,7 @@ const { protect } = require('../middleware/authMiddleware');
 
 router.use(protect);
 
+router.post('/', createConversation);
 router.get('/', getConversations);
 router.put('/:id/mute', muteConversation);
 router.put('/:id/favourite', favouriteConversation);

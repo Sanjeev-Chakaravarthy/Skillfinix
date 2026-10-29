@@ -11,12 +11,12 @@ const {
   getOrCreateConversation
 } = require('../controllers/userController');
 const { protect } = require('../middleware/authMiddleware');
-const { uploadAvatar } = require('../config/cloudinary');
+const { uploadAvatar } = require('../config/upload');
 
 // Get barter users
 router.get('/barters', protect, getBarterUsers);
 
-// Update profile with Cloudinary avatar upload
+// Update profile with avatar upload
 router.put('/profile', protect, uploadAvatar.single('avatar'), updateUserProfile);
 
 // Block user

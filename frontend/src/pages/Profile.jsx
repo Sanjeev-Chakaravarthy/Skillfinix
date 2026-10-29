@@ -111,7 +111,7 @@ const Profile = () => {
       // Only append avatar if a new file was selected
       if (formData.avatar instanceof File) {
         data.append("avatar", formData.avatar);
-        console.log("📤 Uploading new avatar to Cloudinary:", formData.avatar.name);
+        console.log("📤 Uploading new avatar:", formData.avatar.name);
       }
 
       const response = await api.put("/users/profile", data, {
@@ -184,7 +184,7 @@ const Profile = () => {
     return `https://ui-avatars.com/api/?name=${encodedName}&background=6366f1&color=fff&size=200&bold=true`;
   };
 
-  // Get avatar URL - works with both Cloudinary URLs and other sources
+  // Get avatar URL - works with both full URLs and local paths
   const getAvatarUrl = () => {
     // Priority 1: Show preview if user selected a new image
     if (previewImage) {

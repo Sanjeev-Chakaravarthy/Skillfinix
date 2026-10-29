@@ -1,63 +1,99 @@
 import React from "react";
-import { ThumbsUp, Heart, BookmarkPlus, ArrowRightLeft, Share2 } from "lucide-react";
+import { ThumbsUp, ThumbsDown, Share2, Download, BarChart2, Edit, Trash2 } from "lucide-react";
 import { CustomButton } from "./CustomButton";
+import { useNavigate } from "react-router-dom";
 
-const SkillActions = ({ liked, favorited, watchLater, onToggle, onRequestSwap }) => {
+const SkillActions = ({ 
+  isOwner, 
+  courseId,
+  liked, 
+  disliked,
+  likesCount,
+  onToggleLike, 
+  onToggleDislike,
+  onDownload,
+  onOpenDeleteModal
+}) => {
+  const navigate = useNavigate();
+
   return (
-    <div className="flex flex-wrap items-center gap-3">
-      <CustomButton
-        onClick={() => onToggle('like')}
-        variant={liked ? 'default' : 'outline'}
-        size="sm"
-        className={`rounded-full shadow-sm hover:shadow-md transition-all ${liked ? 'bg-primary text-primary-foreground' : 'text-foreground'}`}
-      >
-        <ThumbsUp className={`mr-2 h-4 w-4 ${liked ? "fill-current" : ""}`} />
-        {liked ? "Appreciated" : "Appreciate"}
-      </CustomButton>
+    <div className="flex flex-wrap items-center gap-2">
+      {isOwner ? (
+        <>
+          <CustomButton
+            onClick={() => navigate(`/studio/analytics/${courseId}`)}
+            variant="outline"
+            size="sm"
+            className="rounded-full shadow-sm hover:shadow-md transition-all font-semibold"
+          >
+            <BarChart2 className="mr-2 h-4 w-4" />
+            Analytics
+          </CustomButton>
+          
+          <CustomButton
+            onClick={() => navigate(`/studio/edit/${courseId}`)}
+            variant="outline"
+            size="sm"
+            className="rounded-full shadow-sm hover:shadow-md transition-all font-semibold"
+          >
+            <Edit className="mr-2 h-4 w-4" />
+            Edit Video
+          </CustomButton>
 
-      <CustomButton
-        onClick={() => onToggle('watch_later')}
-        variant={watchLater ? 'secondary' : 'outline'}
-        size="sm"
-        className="rounded-full shadow-sm hover:shadow-md transition-all"
-      >
-        <BookmarkPlus className={`mr-2 h-4 w-4 ${watchLater ? 'text-primary' : ''}`} />
-        {watchLater ? 'Saved for Practice' : 'Save Skill'}
-      </CustomButton>
+          <CustomButton
+            onClick={onOpenDeleteModal}
+            variant="outline"
+            size="sm"
+            className="rounded-full shadow-sm hover:shadow-md transition-all text-red-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200 font-semibold"
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete
+          </CustomButton>
+        </>
+      ) : (
+        <>
+          {/* Like / Dislike Pill */}
+          <div className="flex items-center bg-card border border-border/60 rounded-full shadow-sm hover:shadow-md transition-all overflow-hidden">
+            <button
+              onClick={onToggleLike}
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold transition-colors hover:bg-muted ${liked ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              <ThumbsUp className={`h-4 w-4 ${liked ? "fill-current" : ""}`} />
+              {likesCount || 0}
+            </button>
+            <div className="w-px h-5 bg-border/60" />
+            <button
+              onClick={onToggleDislike}
+              className={`flex items-center gap-2 px-4 py-2 text-sm transition-colors hover:bg-muted ${disliked ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              <ThumbsDown className={`h-4 w-4 mt-1 ${disliked ? "fill-current" : ""}`} />
+            </button>
+          </div>
 
-      <CustomButton
-        onClick={() => onToggle('favorite')}
-        variant={favorited ? 'secondary' : 'outline'}
-        size="sm"
-        className="rounded-full shadow-sm hover:shadow-md transition-all"
-        title="Add to Favorites"
-      >
-        <Heart className={`mr-2 h-4 w-4 ${favorited ? "fill-rose-500 text-rose-500" : ""}`} />
-        Favorite
-      </CustomButton>
+          <CustomButton
+            variant="outline"
+            size="sm"
+            className="rounded-full shadow-sm hover:shadow-md transition-all font-semibold bg-card text-foreground border-border/60"
+            onClick={() => {
+              navigator.clipboard.writeText(window.location.href);
+              alert("Link copied to clipboard!"); // Ideally toast
+            }}
+          >
+            <Share2 className="mr-2 h-4 w-4" />
+            Share
+          </CustomButton>
 
-      <CustomButton
-        onClick={onRequestSwap}
-        variant="default"
-        size="sm"
-        className="rounded-full bg-violet-600 hover:bg-violet-700 text-white shadow-xl hover:shadow-violet-600/30 transition-all font-semibold ml-auto sm:ml-0"
-      >
-        <ArrowRightLeft className="mr-2 h-4 w-4" />
-        Request Swap
-      </CustomButton>
-
-      <CustomButton
-        variant="ghost"
-        size="icon"
-        className="rounded-full hover:bg-muted"
-        title="Share Skill"
-        onClick={() => {
-          navigator.clipboard.writeText(window.location.href);
-          alert("Link copied to clipboard!"); // Ideally toast
-        }}
-      >
-        <Share2 className="h-4 w-4" />
-      </CustomButton>
+          <CustomButton
+            variant="outline"
+            size="sm"
+            className="rounded-full shadow-sm hover:shadow-md transition-all font-semibold bg-card text-foreground border-border/60"
+            onClick={onDownload}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Download
+          </CustomButton>
+        </>
+      )}
     </div>
   );
 };

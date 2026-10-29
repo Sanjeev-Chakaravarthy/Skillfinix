@@ -14,20 +14,55 @@ connectDB();
 const app = express();
 const server = http.createServer(app);
 
+// CORS origins setup
+const configuredOrigins = process.env.CLIENT_URL
+  ? process.env.CLIENT_URL.split(',').map((url) => url.trim().replace(/\/+$/, ''))
+  : [];
+
+const defaultAllowedOrigins = [
+  'http://localhost:8080',
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'https://skillfinix.vercel.app',
+  ...configuredOrigins
+];
+
+const isOriginAllowed = (origin) => {
+  if (!origin) return true; // Allow non-browser requests (mobile, curl, Postman)
+  const normalized = origin.replace(/\/+$/, '');
+  if (defaultAllowedOrigins.includes(normalized)) return true;
+  try {
+    const hostname = new URL(origin).hostname;
+    if (hostname.endsWith('.vercel.app')) return true;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') return true;
+  } catch (e) {
+    // Malformed origin
+  }
+  return false;
+};
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (isOriginAllowed(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`⚠️ CORS blocked request from origin: ${origin}`);
+      callback(new Error(`CORS blocked for origin: ${origin}`));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+};
+
 // Socket.io configuration
 const io = new Server(server, {
-  cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:8080',
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    credentials: true
-  }
+  cors: corsOptions
 });
 
 // Middleware
-app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:8080',
-  credentials: true
-}));
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 // Increase body size limits for large video uploads
 app.use(express.json({ limit: '500mb' }));

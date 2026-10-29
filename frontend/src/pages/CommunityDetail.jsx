@@ -9,6 +9,7 @@ import api from "@/api/axios";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 import { ConfirmModal, CommunityModal } from "./Communities";
+import { resolveMediaUrl } from "@/config/api";
 
 /* ─── Avatar helper ─────────────────────────────────────────────── */
 const avatarUrl = (u) =>
@@ -29,12 +30,8 @@ const fmtRelative = (d) => {
 
 /* ─── Image helper ───────────────────────────────────────────────── */
 const resolveImageUrl = (url) => {
-  if (!url) return "";
-  if (url.startsWith("/uploads")) {
-    return `http://localhost:5005${url}`;
-  }
-  return url;
-}; // Added helper for backend images
+  return resolveMediaUrl(url, "");
+};
 
 /* ─── Skeleton ───────────────────────────────────────────────────── */
 function Skeleton({ className = "" }) {

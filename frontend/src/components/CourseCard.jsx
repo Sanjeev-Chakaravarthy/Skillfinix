@@ -64,21 +64,22 @@ const CourseCard = ({ course, variant = "default", className }) => {
 
   if (variant === "featured") {
     return (
-      <Link to={`/course/${course._id || course.id}`}>
+      <Link to={`/course/${course._id || course.id}`} className="block h-full">
         <motion.div
-          whileHover={{ y: -4 }}
+          whileHover={{ scale: 1.03, y: -4 }}
+          whileTap={{ scale: 0.98 }}
           className={cn(
-            "group relative bg-card rounded-2xl shadow-card hover:shadow-card-hover transition-all duration-300 overflow-hidden",
+            "group relative h-full flex flex-col bg-card rounded-xl overflow-hidden shadow-card hover:shadow-card-hover transition-all duration-300",
             className
           )}
         >
-          {/* Thumbnail */}
-          <div className="relative overflow-hidden aspect-video bg-muted">
+          {/* Thumbnail — fixed 16:9 ratio */}
+          <div className="relative w-full overflow-hidden aspect-video bg-muted flex-shrink-0">
             {course.thumbnail ? (
               <img
                 src={course.thumbnail}
                 alt={course.title}
-                className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; }}
               />
             ) : (
@@ -110,8 +111,8 @@ const CourseCard = ({ course, variant = "default", className }) => {
             )}
           </div>
 
-          {/* Content */}
-          <div className="p-5">
+          {/* Content — flex-grow ensures equal card height */}
+          <div className="flex flex-col flex-grow p-5 min-h-[140px]">
             {tags.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mb-3">
                 {tags.slice(0, 3).map((tag) => (
@@ -131,12 +132,15 @@ const CourseCard = ({ course, variant = "default", className }) => {
                 <img
                   src={course.instructorAvatar || avatarFallback(course.instructor)}
                   alt={course.instructor}
-                  className="object-cover w-6 h-6 rounded-full"
+                  className="object-cover w-6 h-6 rounded-full flex-shrink-0"
                   onError={(e) => { e.target.onerror = null; e.target.src = avatarFallback(course.instructor); }}
                 />
-                <span className="text-sm text-muted-foreground">{course.instructor}</span>
+                <span className="text-sm text-muted-foreground truncate">{course.instructor}</span>
               </div>
             )}
+
+            {/* Spacer pushes footer to bottom */}
+            <div className="flex-grow" />
 
             <div className="flex items-center justify-between pt-4 mt-4 border-t border-border">
               <RatingStars rating={course.rating} reviewCount={course.reviewCount} size="sm" />

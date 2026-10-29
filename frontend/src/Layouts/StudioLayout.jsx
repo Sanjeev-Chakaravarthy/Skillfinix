@@ -19,10 +19,10 @@ const StudioLayout = () => {  // Remove children prop
     return `https://ui-avatars.com/api/?name=${encodedName}&background=6366f1&color=fff&size=200&bold=true`;
   };
 
-  // Helper function to get proper avatar URL (works with Cloudinary)
+  // Helper function to get proper avatar URL
   const getAvatarUrl = (avatarPath) => {
     if (!avatarPath) return getDefaultAvatar(user?.name);
-    if (avatarPath.startsWith("http")) return avatarPath; // Cloudinary, Google OAuth, etc.
+    if (avatarPath.startsWith("http")) return avatarPath; // Google OAuth, Supabase, etc.
     return getDefaultAvatar(user?.name);
   };
 

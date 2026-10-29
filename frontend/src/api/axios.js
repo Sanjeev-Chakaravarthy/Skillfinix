@@ -1,7 +1,8 @@
 import axios from 'axios';
+import { API_URL } from '@/config/api';
 
 const api = axios.create({
-  baseURL: 'https://skillfinix-aygxa7f5c5ggemds.centralindia-01.azurewebsites.net/api',
+  baseURL: API_URL,
   timeout: 600000, // 10 minutes default timeout for large uploads
   maxContentLength: Infinity,
   maxBodyLength: Infinity,
