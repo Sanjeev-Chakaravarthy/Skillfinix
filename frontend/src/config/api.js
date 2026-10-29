@@ -1,5 +1,10 @@
 // Base backend server URL configuration
-const rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5005';
+const DEFAULT_PROD_API = 'https://skillfinix-aygxa7f5c5ggemds.centralindia-01.azurewebsites.net';
+const DEFAULT_DEV_API = 'http://localhost:5005';
+
+const rawApiUrl =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.PROD ? DEFAULT_PROD_API : DEFAULT_DEV_API);
 
 // Strip any trailing slashes
 const cleanUrl = rawApiUrl.replace(/\/+$/, '');
@@ -30,4 +35,3 @@ export default {
   API_URL,
   resolveMediaUrl,
 };
-
