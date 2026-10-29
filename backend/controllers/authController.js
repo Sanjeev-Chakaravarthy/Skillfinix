@@ -119,7 +119,11 @@ const googleAuth = async (req, res) => {
       });
     } else {
       // Create new user with Google picture URL
-      const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+      const salt = await bcrypt.genSalt(10);
+      const randomPassword = await bcrypt.hash(
+        Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8),
+        salt
+      );
       
       user = await User.create({
         name,

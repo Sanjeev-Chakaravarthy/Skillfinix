@@ -275,7 +275,7 @@ const Login = () => {
           <div className="mb-5">
             <GoogleButton
               onSuccess={handleGoogleSuccess}
-              onError={() => setError("Google Login Failed")}
+              onError={() => setError("Google Sign-In was cancelled or not allowed.")}
               disabled={loading}
             />
           </div>
