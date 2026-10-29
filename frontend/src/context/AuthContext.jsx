@@ -93,7 +93,7 @@ export const AuthProvider = ({ children }) => {
       setIsLoading(false);
       return { 
         success: false, 
-        error: error.response?.data?.message || "Registration failed" 
+        error: getErrorMessage(error, "Registration failed") 
       };
     }
   }, []);
