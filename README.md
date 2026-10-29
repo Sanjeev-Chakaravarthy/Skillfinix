@@ -45,7 +45,7 @@
 -   **Database**: MongoDB (Mongoose)
 -   **Real-Time**: Socket.io
 -   **Authentication**: JWT (JSON Web Tokens)
--   **Storage**: Cloudinary (for images and videos)
+-   **Storage**: Supabase Storage (for videos), Local disk (for avatars and chat files)
 
 ---
 
@@ -73,10 +73,9 @@ MONGO_URI=your_mongodb_connection_string
 JWT_SECRET=your_super_secret_key
 CLIENT_URL=http://localhost:5173
 
-# Cloudinary Config (for file uploads)
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
+# Supabase Config (for video uploads & chat files)
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 ```
 
 Start the backend server:
@@ -107,7 +106,7 @@ npm run dev
 ```
 skillup-hub-main/
 ├── backend/                # Node.js/Express Backend
-│   ├── config/             # Database & Cloudinary config
+│   ├── config/             # Database & Supabase config
 │   ├── controllers/        # Route logic (Auth, Course, Chat, etc.)
 │   ├── models/             # Mongoose Schemas (User, Course, Interaction, etc.)
 │   ├── routes/             # API Routes

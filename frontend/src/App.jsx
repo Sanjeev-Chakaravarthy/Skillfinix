@@ -54,6 +54,8 @@ const Achievements  = lazy(() => import("@/pages/Achievements"));
 const StudioLayout    = lazy(() => import("@/Layouts/StudioLayout"));
 const StudioDashboard = lazy(() => import("@/pages/studio/Dashboard"));
 const StudioContent   = lazy(() => import("@/pages/studio/Content"));
+const EditCourse      = lazy(() => import("@/pages/studio/EditCourse"));
+const VideoAnalytics  = lazy(() => import("@/pages/studio/VideoAnalytics"));
 
 const ProtectedRoute  = lazy(() => import("@/pages/ProtectedRoute"));
 
@@ -152,6 +154,7 @@ const App = () => (
                     <Route path="/skill-hunt" element={<SkillHunt />} />
                     <Route path="/barters"    element={<Barters />} />
                     <Route path="/skill-chat" element={<SkillChat />} />
+                    <Route path="/chat/:conversationId" element={<SkillChat />} />
 
                     {/* Course Viewing */}
                     <Route path="/watch/:id"   element={<WatchVideo />} />
@@ -197,7 +200,9 @@ const App = () => (
                     <Route path="/studio/dashboard"    element={<StudioDashboard />} />
                     <Route path="/studio/content"      element={<StudioContent />} />
                     <Route path="/studio/upload"       element={<UploadVideo />} />
+                    <Route path="/studio/edit/:id"     element={<EditCourse />} />
                     <Route path="/studio/analytics"    element={<StudioDashboard />} />
+                    <Route path="/studio/analytics/:id" element={<VideoAnalytics />} />
                     <Route path="/studio/comments"     element={<StudioContent />} />
                     <Route path="/studio/settings"     element={<Settings />} />
                   </Route>

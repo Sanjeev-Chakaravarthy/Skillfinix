@@ -37,8 +37,10 @@ const UploadVideo = () => {
   const [uploadStatus, setUploadStatus] = useState("idle");
   const [uploadProgress, setUploadProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState("");
+  const isUploading = useRef(false); // Prevent double submissions
   
   const inputRef = useRef(null);
+  const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500 MB
   const navigate = useNavigate();
 
   // Cleanup object URLs to avoid memory leaks
@@ -54,6 +56,10 @@ const UploadVideo = () => {
     if (!file) return;
     if (!file.type.startsWith("video/")) {
       alert("Please upload a valid video file.");
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      alert(`File too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum size is 500 MB.`);
       return;
     }
     setSelectedFile(file);
@@ -90,6 +96,8 @@ const UploadVideo = () => {
 
   const handleUpload = async () => {
     if (!selectedFile || !formData.title || !formData.category) return;
+    if (isUploading.current) return; // Prevent double submissions
+    isUploading.current = true;
 
     setUploadStatus("uploading");
     setUploadProgress(0);
@@ -126,6 +134,7 @@ const UploadVideo = () => {
 
       setUploadProgress(100);
       setUploadStatus("success");
+      isUploading.current = false;
     } catch (error) {
       let errorMsg = "Upload failed. Please try again.";
       
@@ -141,6 +150,7 @@ const UploadVideo = () => {
       
       setErrorMessage(errorMsg);
       setUploadStatus("error");
+      isUploading.current = false;
     }
   };
 

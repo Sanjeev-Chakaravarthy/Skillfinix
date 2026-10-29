@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   MapPin,
@@ -12,12 +12,17 @@ import {
   Zap,
   Home,
   Star,
+  UserPlus,
+  UserCheck,
+  Users,
+  Loader2,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import api from "@/api/axios";
 import { useAuth } from "@/context/AuthContext";
 import { CustomButton } from "@/components/CustomButton";
 import { useToast } from "@/components/ui/use-toast";
+import { resolveMediaUrl } from "@/config/api";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -27,9 +32,8 @@ const getDefaultAvatar = (name) => {
 };
 
 const getAvatarUrl = (user) => {
-  if (user?.avatar && user.avatar.startsWith("http")) return user.avatar;
-  if (user?.avatar && user.avatar.startsWith("/")) return `http://localhost:5005${user.avatar}`;
-  return getDefaultAvatar(user?.name);
+  if (!user?.avatar) return getDefaultAvatar(user?.name);
+  return resolveMediaUrl(user.avatar, getDefaultAvatar(user?.name));
 };
 
 const formatJoinDate = (dateString) => {
@@ -180,6 +184,10 @@ const ProfilePage = () => {
   const [profileUser, setProfileUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [followerCount, setFollowerCount] = useState(0);
+  const [followStatusLoaded, setFollowStatusLoaded] = useState(false);
 
   useEffect(() => {
     console.log("[ProfilePage] Fetching profile for id:", id);
@@ -245,6 +253,84 @@ const ProfilePage = () => {
 
   const handleSwapRequest = () => {
     navigate("/barters");
+  };
+
+  // ── Fetch Follow Status ──────────────────────────────────────────────────
+  const fetchFollowStatus = useCallback(async () => {
+    if (!id || !currentUser) return;
+    try {
+      const { data } = await api.get(`/users/${id}/follow-status`);
+      setIsFollowing(data.isFollowing ?? false);
+      setFollowerCount(data.followerCount ?? 0);
+    } catch (err) {
+      console.warn("[ProfilePage] Could not load follow status:", err?.message);
+    } finally {
+      setFollowStatusLoaded(true);
+    }
+  }, [id, currentUser]);
+
+  useEffect(() => {
+    if (profileUser && currentUser) {
+      setFollowStatusLoaded(false);
+      fetchFollowStatus();
+    }
+  }, [profileUser, currentUser, fetchFollowStatus]);
+
+  // ── Follow / Unfollow Handler ────────────────────────────────────────────
+  const handleFollow = async () => {
+    console.log("[handleFollow] Click fired");
+    console.log("[handleFollow] Target user._id:", profileUser?._id);
+
+    if (!currentUser) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to follow this user.",
+        variant: "destructive",
+      });
+      navigate("/login");
+      return;
+    }
+
+    if (!profileUser?._id) {
+      console.error("[handleFollow] Error: profileUser._id is undefined");
+      toast({ title: "Error", description: "User not found.", variant: "destructive" });
+      return;
+    }
+
+    // Optimistic update
+    const prevFollowing = isFollowing;
+    const prevCount = followerCount;
+    setIsFollowing(!isFollowing);
+    setFollowerCount((c) => (isFollowing ? Math.max(0, c - 1) : c + 1));
+    setFollowLoading(true);
+
+    try {
+      console.log(`[handleFollow] POST /api/users/${profileUser._id}/follow`);
+      const { data } = await api.post(`/users/${profileUser._id}/follow`);
+      console.log("[handleFollow] Success:", data);
+
+      // Sync with server
+      setIsFollowing(data.isFollowing);
+      setFollowerCount(data.followerCount ?? prevCount);
+
+      toast({
+        title: data.isFollowing ? "Following! 🎉" : "Unfollowed",
+        description: data.isFollowing
+          ? `You are now following ${profileUser.name || "this user"}.`
+          : `You unfollowed ${profileUser.name || "this user"}.`,
+      });
+    } catch (err) {
+      console.error("[handleFollow] Request failed:", err);
+      console.error("[handleFollow] Error response:", err.response?.data);
+      console.error("[handleFollow] Status:", err.response?.status);
+      // Rollback
+      setIsFollowing(prevFollowing);
+      setFollowerCount(prevCount);
+      const msg = err?.response?.data?.message || "Failed to update follow status.";
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    } finally {
+      setFollowLoading(false);
+    }
   };
 
   // ── States ──────────────────────────────────────────────────────────────────
@@ -356,6 +442,26 @@ const ProfilePage = () => {
             {/* Right: Action Buttons */}
             <div className="flex gap-3 pt-2 sm:pt-0 sm:pb-2 w-full sm:w-auto">
               <CustomButton
+                variant={isFollowing ? "outline" : "gradient"}
+                className={[
+                  "flex-1 sm:flex-none font-semibold transition-all",
+                  isFollowing
+                    ? "border-primary text-primary hover:bg-destructive/10 hover:text-destructive hover:border-destructive"
+                    : "shadow-lg shadow-primary/20",
+                ].join(" ")}
+                onClick={handleFollow}
+                disabled={followLoading}
+              >
+                {followLoading ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : isFollowing ? (
+                  <UserCheck className="w-4 h-4 mr-2" />
+                ) : (
+                  <UserPlus className="w-4 h-4 mr-2" />
+                )}
+                {followLoading ? "…" : isFollowing ? "Following" : "Follow"}
+              </CustomButton>
+              <CustomButton
                 variant="outline"
                 className="flex-1 sm:flex-none"
                 onClick={handleMessage}
@@ -364,8 +470,8 @@ const ProfilePage = () => {
                 Message
               </CustomButton>
               <CustomButton
-                variant="gradient"
-                className="flex-1 sm:flex-none shadow-lg shadow-primary/20"
+                variant="outline"
+                className="flex-1 sm:flex-none"
                 onClick={handleSwapRequest}
               >
                 <ArrowLeftRight className="w-4 h-4 mr-2" />
@@ -387,6 +493,12 @@ const ProfilePage = () => {
               label="Interests"
               value={interests.length || 0}
               color="secondary"
+            />
+            <StatPill
+              icon={Users}
+              label="Followers"
+              value={followStatusLoaded ? followerCount : "—"}
+              color="primary"
             />
             <StatPill
               icon={Zap}

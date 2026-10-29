@@ -18,6 +18,8 @@ const courseSchema = mongoose.Schema({
   enrolledCount: { type: Number, default: 0 },
   price: { type: Number, default: 0 },
   visibility: { type: String, enum: ['public', 'private'], default: 'public' },
+  likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  dislikes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
 }, { timestamps: true });
 
 // ── Indexes for production query performance ──────────────────────────────────

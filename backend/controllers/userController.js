@@ -54,9 +54,10 @@ const updateUserProfile = async (req, res) => {
       user.interests = Array.isArray(interests) ? interests : interests.split(',').map(s => s.trim());
     }
 
-    // Handle Avatar Upload (Cloudinary)
+    // Handle Avatar Upload (local disk)
     if (req.file) {
-      user.avatar = req.file.path;
+      const serverUrl = process.env.SERVER_URL || `http://localhost:${process.env.PORT || 5005}`;
+      user.avatar = `${serverUrl}/uploads/avatars/${req.file.filename}`;
     }
 
     const updatedUser = await user.save();

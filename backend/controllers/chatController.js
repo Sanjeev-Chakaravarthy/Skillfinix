@@ -2,6 +2,39 @@ const Message = require('../models/Message');
 const User = require('../models/User');
 const Conversation = require('../models/Conversation');
 
+// @desc    Create or get conversation
+// @route   POST /api/conversations
+const createConversation = async (req, res) => {
+  try {
+    const { receiverId } = req.body;
+    const currentUserId = req.user._id.toString();
+
+    if (!receiverId) {
+      return res.status(400).json({ message: 'Receiver ID is required' });
+    }
+
+    if (receiverId === currentUserId) {
+      return res.status(400).json({ message: 'Cannot message yourself' });
+    }
+
+    let conversation = await Conversation.findOne({
+      participants: { $all: [currentUserId, receiverId] }
+    });
+
+    if (!conversation) {
+      conversation = await Conversation.create({
+        participants: [currentUserId, receiverId],
+        settings: []
+      });
+    }
+
+    res.status(200).json(conversation);
+  } catch (error) {
+    console.error('Error creating conversation:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // @desc    Get all conversations for a user
 // @route   GET /api/chat/conversations
 const getConversations = async (req, res) => {
@@ -530,6 +563,7 @@ const deleteChat = async (req, res) => {
 
 
 module.exports = {
+  createConversation,
   getConversations,
   getMessages,
   sendMessage,

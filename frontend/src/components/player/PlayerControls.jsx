@@ -130,12 +130,24 @@ const PlayerControls = ({
             </button>
 
             {/* Deep Learn Mode (Theater) */}
-            <button 
+            <button
               onClick={toggleTheaterMode}
-              className="text-white hover:text-primary transition-all hover:scale-110 p-1.5 rounded-full hover:bg-white/10 hidden sm:block focus:outline-none"
-              title="Deep Learn Mode (Theater)"
+              className={`transition-all hover:scale-110 p-1.5 rounded-full hover:bg-white/10 hidden sm:block focus:outline-none ${
+                isTheaterMode
+                  ? "text-primary drop-shadow-[0_0_6px_hsl(var(--primary))]"
+                  : "text-white hover:text-primary"
+              }`}
+              title={isTheaterMode ? "Exit Theater Mode (T)" : "Theater Mode (T)"}
             >
-               <RectangleHorizontal className="w-[20px] h-[20px] stroke-[1.5]" />
+              {isTheaterMode ? (
+                /* Filled rectangle = active */
+                <svg className="w-[20px] h-[20px]" viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="2" y="5" width="20" height="14" rx="2" />
+                </svg>
+              ) : (
+                /* Outlined rectangle = inactive */
+                <RectangleHorizontal className="w-[20px] h-[20px] stroke-[1.5]" />
+              )}
             </button>
 
             {/* Fullscreen */}

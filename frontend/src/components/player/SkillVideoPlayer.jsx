@@ -7,7 +7,9 @@ import { cn } from "@/lib/utils";
 
 import PlayerControls from "./PlayerControls";
 
-const SkillVideoPlayer = ({ course, loading, error, className }) => {
+// isTheater and onToggleTheater are LIFTED to WatchVideo.jsx so the
+// outer layout (sidebar, grid) can react to the theater state.
+const SkillVideoPlayer = ({ course, loading, error, className, isTheater = false, onToggleTheater }) => {
   const videoRef = useRef(null);
   const containerRef = useRef(null);
   const hideControlsTimeoutRef = useRef(null);
@@ -18,7 +20,6 @@ const SkillVideoPlayer = ({ course, loading, error, className }) => {
   const [isBuffering, setIsBuffering] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isTheaterMode, setIsTheaterMode] = useState(false);
   const [skipAction, setSkipAction] = useState(null); // 'forward' | 'backward'
   const [aspectRatio, setAspectRatio] = useState("auto");
 
@@ -63,6 +64,10 @@ const SkillVideoPlayer = ({ course, loading, error, className }) => {
         case 'f':
           e.preventDefault();
           toggleFullscreen();
+          break;
+        case 't':
+          e.preventDefault();
+          onToggleTheater?.();
           break;
         case 'm':
           e.preventDefault();
@@ -122,7 +127,26 @@ const SkillVideoPlayer = ({ course, loading, error, className }) => {
       syncIntervalRef.current = setInterval(async () => {
         if (!videoRef.current || videoRef.current.paused || videoRef.current.duration === 0) return;
         
-        const p = (videoRef.current.currentTime / videoRef.current.duration) * 100;
+        const currentTime = videoRef.current.currentTime;
+        const duration = videoRef.current.duration;
+        const p = (currentTime / duration) * 100;
+        
+        // -------------------------------------------------------------
+        // ANTI-FAKE VIEWS TRIGGER
+        // Trigger a real view if watched > 10s OR > 30% of video
+        // -------------------------------------------------------------
+        const lsKey = `view_counted_${course._id}`;
+        if (!localStorage.getItem(lsKey) && (currentTime >= 10 || p >= 30)) {
+           try {
+              // Call the new robust endpoint
+              await api.post(`/courses/${course._id}/view`);
+              localStorage.setItem(lsKey, "true"); // Prevent further calls this session
+           } catch (e) {
+              // If backend rejects it (e.g. rate limit), still set true to stop retries
+              localStorage.setItem(lsKey, "true"); 
+           }
+        }
+
         try {
           // If ~90% watched, mark complete silently to unlock achievements earlier
           await api.put(`/enrollments/${course._id}/progress`, { 
@@ -194,7 +218,7 @@ const SkillVideoPlayer = ({ course, loading, error, className }) => {
     }
   };
 
-  const toggleTheaterMode = () => setIsTheaterMode(!isTheaterMode);
+  const toggleTheaterMode = () => onToggleTheater?.();
 
   const toggleMiniPlayer = async () => {
     const v = videoRef.current;
@@ -223,18 +247,27 @@ const SkillVideoPlayer = ({ course, loading, error, className }) => {
 
   if (error || !course) return null;
 
+  // In theater mode the wrapper is full-width, max height is 85vh, video never stretches
   return (
-    <div 
+    <div
       ref={containerRef}
       onMouseMove={resetHideControlsTimer}
       onMouseLeave={() => { if (videoRef.current && !videoRef.current.paused) setShowControls(false); }}
       className={cn(
-        "relative w-full rounded-2xl overflow-hidden shadow-2xl bg-black group flex flex-col font-sans",
-        isTheaterMode ? "fixed inset-0 z-50 rounded-none w-full h-screen align-center justify-center p-0 m-0" : "",
+        "relative w-full overflow-hidden shadow-2xl bg-black group flex flex-col font-sans",
+        isTheater
+          ? "rounded-none w-full" 
+          : "rounded-2xl",
         isFullscreen && "rounded-none border-none",
         className
       )}
-      style={!isTheaterMode && !isFullscreen ? { aspectRatio, margin: 0, padding: 0 } : {}}
+      style={
+        isFullscreen
+          ? {}
+          : isTheater
+            ? { aspectRatio: "16/9", maxHeight: "85vh", width: "100%" }
+            : { aspectRatio, margin: 0, padding: 0 }
+      }
     >
       {/* 
         MAIN VIDEO TRACK 
@@ -288,12 +321,12 @@ const SkillVideoPlayer = ({ course, loading, error, className }) => {
       )}
 
       {/* LAYER 3: RUTHLESSLY MODULAR PLAYER CONTROLS */}
-      <PlayerControls 
+      <PlayerControls
         videoRef={videoRef}
         title={course.title}
         showControls={showControls}
         isFullscreen={isFullscreen}
-        isTheaterMode={isTheaterMode}
+        isTheaterMode={isTheater}
         togglePlayPause={togglePlayPause}
         toggleFullscreen={toggleFullscreen}
         toggleTheaterMode={toggleTheaterMode}

@@ -1,7 +1,8 @@
 import axios from 'axios';
+import { API_URL } from '@/config/api';
 
 const api = axios.create({
-  baseURL: 'http://localhost:5005/api',
+  baseURL: API_URL,
   timeout: 600000, // 10 minutes default timeout for large uploads
   maxContentLength: Infinity,
   maxBodyLength: Infinity,

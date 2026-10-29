@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { useAuth } from './AuthContext';
+import { BACKEND_URL } from '@/config/api';
 
 const SocketContext = createContext(null);
 
@@ -47,12 +48,11 @@ export const SocketProvider = ({ children }) => {
 
     console.log('🔌 Initializing socket connection for user:', user._id);
 
-    // Get API URL
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5005';
-    console.log('🌐 Connecting to:', API_URL);
+    // Connect to backend server origin
+    console.log('🌐 Connecting to socket server:', BACKEND_URL);
 
     // Create socket instance
-    const newSocket = io(API_URL, {
+    const newSocket = io(BACKEND_URL, {
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionAttempts: 5,
