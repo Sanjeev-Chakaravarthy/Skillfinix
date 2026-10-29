@@ -1,0 +1,36 @@
+name: Deploy Backend to Azure - skillfinix
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '24.x'
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm install
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_67E900615A6C44C58A6E8DF1D826C70B }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_4CEAE8FCC4B34436A16F8D86DA7BDC1A }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_237BAA35B1454675AAC2C86F6AD1EFA6 }}
+
+      - name: Deploy backend ONLY
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: skillfinix
+          package: backend
