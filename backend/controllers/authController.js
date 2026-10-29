@@ -4,11 +4,18 @@ const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const { OAuth2Client } = require('google-auth-library');
 
+const GOOGLE_CLIENT_ID =
+  process.env.GOOGLE_CLIENT_ID ||
+  '179957926735-g40uv2ocp7q1j13sjophavrq9ouaspuv.apps.googleusercontent.com';
+
+const JWT_SECRET =
+  process.env.JWT_SECRET || 'skillfinix_production_jwt_secret_key_2026';
+
 // Initialize Google Client
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const client = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+  return jwt.sign({ id }, JWT_SECRET, { expiresIn: '30d' });
 };
 
 // @desc    Register new user
@@ -82,10 +89,14 @@ const loginUser = async (req, res) => {
 const googleAuth = async (req, res) => {
   const { token } = req.body;
 
+  if (!token) {
+    return res.status(400).json({ message: 'Google authentication token is required' });
+  }
+
   try {
     const ticket = await client.verifyIdToken({
       idToken: token,
-      audience: process.env.GOOGLE_CLIENT_ID,
+      audience: GOOGLE_CLIENT_ID,
     });
 
     const { name, email, picture } = ticket.getPayload();

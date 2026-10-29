@@ -252,9 +252,34 @@ app.get('/api/skills/popular', async (req, res) => {
   }
 });
 
-// Health check route (important for Azure)
+// Health check route (important for Azure and monitoring)
 app.get('/', (req, res) => {
-  res.status(200).send('Skillfinix backend running 🚀');
+  res.status(200).json({
+    status: 'ok',
+    message: 'Skillfinix backend running 🚀',
+    uptime: process.uptime(),
+  });
+});
+
+app.get('/api/health', (req, res) => {
+  const mongoose = require('mongoose');
+  const mongoStates = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' };
+  res.status(200).json({
+    status: 'ok',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+    mongo: {
+      status: mongoStates[mongoose.connection.readyState] || 'unknown',
+      readyState: mongoose.connection.readyState,
+      hasUri: Boolean(process.env.MONGO_URI),
+    },
+    env: {
+      hasJwtSecret: Boolean(process.env.JWT_SECRET),
+      hasGoogleClientId: Boolean(process.env.GOOGLE_CLIENT_ID),
+      hasClientUrl: Boolean(process.env.CLIENT_URL),
+      hasSupabaseUrl: Boolean(process.env.SUPABASE_URL),
+    },
+  });
 });
 
 // Setup Socket Handler

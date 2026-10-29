@@ -28,6 +28,16 @@ export const AuthProvider = ({ children }) => {
     checkAuth();
   }, []);
 
+  const getErrorMessage = (error, fallback) => {
+    if (error.response?.data?.message) return error.response.data.message;
+    if (error.response?.status === 503) return "Backend server is unavailable (503). Please verify Azure backend status.";
+    if (error.response?.status === 500) return "Server error (500). Please check database and backend logs.";
+    if (error.code === 'ERR_NETWORK' || error.message?.includes('Network Error')) {
+      return "Cannot connect to backend server. Please verify backend is online.";
+    }
+    return fallback;
+  };
+
   const login = useCallback(async (email, password) => {
     setIsLoading(true);
     try {
@@ -41,7 +51,7 @@ export const AuthProvider = ({ children }) => {
       setIsLoading(false);
       return { 
         success: false, 
-        error: error.response?.data?.message || "Login failed" 
+        error: getErrorMessage(error, "Login failed") 
       };
     }
   }, []);
@@ -59,7 +69,7 @@ export const AuthProvider = ({ children }) => {
       setIsLoading(false);
       return { 
         success: false, 
-        error: error.response?.data?.message || "Google Login failed" 
+        error: getErrorMessage(error, "Google Login failed") 
       };
     }
   }, []);
