@@ -62,7 +62,7 @@ const io = new Server(server, {
 
 // Middleware
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
 
 // Increase body size limits for large video uploads
 app.use(express.json({ limit: '500mb' }));
