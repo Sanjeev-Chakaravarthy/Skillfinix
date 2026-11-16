@@ -4,6 +4,10 @@ import { CustomButton } from "./CustomButton";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/api/axios";
 
+import { resolveAvatarUrl } from "@/lib/avatar";
+
+const getUserAvatar = (u) => resolveAvatarUrl(u?.avatar, u?.name);
+
 const DiscussionSection = ({ courseId }) => {
   const { user } = useAuth();
   const [discussions, setDiscussions] = useState([]);
@@ -82,7 +86,7 @@ const DiscussionSection = ({ courseId }) => {
       {/* Input box */}
       <form onSubmit={handlePostComment} className="flex gap-4 mb-8">
         <img
-          src={user?.avatar || `https://ui-avatars.com/api/?name=${user?.name?.charAt(0) || 'U'}&background=6366f1&color=fff`}
+          src={getUserAvatar(user)}
           alt="Your avatar"
           className="w-10 h-10 rounded-full object-cover shrink-0 mt-1"
         />
@@ -123,7 +127,7 @@ const DiscussionSection = ({ courseId }) => {
           discussions.map(d => (
             <div key={d._id} className="flex gap-4">
               <img
-                src={d.user?.avatar || `https://ui-avatars.com/api/?name=${d.user?.name?.charAt(0) || 'U'}&background=6366f1&color=fff`}
+                src={getUserAvatar(d.user)}
                 alt={d.user?.name}
                 className="w-10 h-10 rounded-full object-cover shrink-0"
               />
@@ -158,7 +162,7 @@ const DiscussionSection = ({ courseId }) => {
                 {replyingTo === d._id && (
                   <div className="flex gap-3 mt-4 animate-in slide-in-from-top-2">
                     <img
-                      src={user?.avatar || `https://ui-avatars.com/api/?name=${user?.name?.charAt(0) || 'U'}&background=6366f1&color=fff`}
+                      src={getUserAvatar(user)}
                       alt="Your avatar"
                       className="w-6 h-6 rounded-full object-cover shrink-0 mt-1"
                     />
@@ -187,7 +191,7 @@ const DiscussionSection = ({ courseId }) => {
                     {d.replies.map((reply, i) => (
                       <div key={i} className="flex gap-3">
                         <img
-                          src={reply.user?.avatar || `https://ui-avatars.com/api/?name=${reply.user?.name?.charAt(0) || 'U'}&background=6366f1&color=fff`}
+                          src={getUserAvatar(reply.user)}
                           alt={reply.user?.name}
                           className="w-6 h-6 rounded-full object-cover shrink-0 mt-0.5"
                         />

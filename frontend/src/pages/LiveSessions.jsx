@@ -16,13 +16,25 @@ const fadeUp = {
 
 const StatusBadge = ({ status }) => {
   const config = {
-    live: { label: 'LIVE', className: 'bg-red-500 text-white animate-pulse', icon: <Wifi className="w-3 h-3" /> },
-    upcoming: { label: 'Upcoming', className: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400', icon: <Clock className="w-3 h-3" /> },
-    ended: { label: 'Ended', className: 'bg-muted text-muted-foreground', icon: <CheckCircle2 className="w-3 h-3" /> },
+    live: {
+      label: 'Live now',
+      className: 'bg-red-500/15 text-red-600 dark:text-red-400 border border-red-500/30 animate-pulse',
+      icon: <span className="w-2 h-2 rounded-full bg-red-500" />,
+    },
+    upcoming: {
+      label: 'Upcoming',
+      className: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30',
+      icon: <Clock className="w-3 h-3 text-amber-600 dark:text-amber-400" />,
+    },
+    ended: {
+      label: 'Completed',
+      className: 'bg-muted text-muted-foreground border border-border/80',
+      icon: <CheckCircle2 className="w-3 h-3" />,
+    },
   };
   const { label, className, icon } = config[status] || config.upcoming;
   return (
-    <span className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full ${className}`}>
+    <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1 rounded-full backdrop-blur-md ${className}`}>
       {icon} {label}
     </span>
   );
@@ -45,15 +57,15 @@ const SessionCard = ({ session, onJoin, joining, currentUser }) => {
       initial="hidden"
       animate="visible"
       layout
-      className="rounded-2xl border border-border/60 bg-card shadow-card hover:shadow-card-hover transition-all duration-300 hover:-translate-y-1 overflow-hidden"
+      className="rounded-2xl border border-border/70 bg-card shadow-card hover:shadow-card-hover transition-colors duration-150 overflow-hidden"
     >
-      {/* Thumbnail or gradient */}
-      <div className="relative h-36 bg-gradient-to-br from-indigo-500 via-violet-500 to-purple-600 overflow-hidden">
+      {/* Thumbnail or solid fallback */}
+      <div className="relative h-36 bg-slate-900 border-b border-border/40 overflow-hidden">
         {session.thumbnail ? (
-          <img src={session.thumbnail} alt={session.title} className="w-full h-full object-cover opacity-70" />
+          <img src={session.thumbnail} alt={session.title} className="w-full h-full object-cover opacity-80" />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
-            <Radio className="w-12 h-12 text-white/30" />
+            <Radio className="w-10 h-10 text-white/30" />
           </div>
         )}
         <div className="absolute top-3 left-3">
@@ -61,7 +73,7 @@ const SessionCard = ({ session, onJoin, joining, currentUser }) => {
         </div>
         {session.category && (
           <div className="absolute bottom-3 right-3">
-            <span className="text-xs bg-black/40 text-white px-2 py-0.5 rounded-full backdrop-blur-sm">
+            <span className="text-xs bg-black/50 text-white px-2 py-0.5 rounded-full backdrop-blur-xs">
               {session.category}
             </span>
           </div>
@@ -88,11 +100,17 @@ const SessionCard = ({ session, onJoin, joining, currentUser }) => {
           </div>
           {session.mentor && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <img
-                src={session.mentor.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(session.mentor.name || 'H')}&background=6366f1&color=fff`}
-                alt={session.mentor.name}
-                className="w-4 h-4 rounded-full object-cover"
-              />
+              {session.mentor.avatar ? (
+                <img
+                  src={session.mentor.avatar}
+                  alt={session.mentor.name}
+                  className="w-4 h-4 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-4 h-4 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[9px] font-bold">
+                  {(session.mentor.name || 'H').charAt(0)}
+                </div>
+              )}
               Host: {session.mentor.name}
             </div>
           )}
@@ -283,7 +301,7 @@ const ScheduleModal = ({ onClose, onCreated }) => {
             <button
               type="submit"
               disabled={submitting}
-              className="flex-1 py-2.5 rounded-xl gradient-primary text-white font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-60 flex items-center justify-center gap-2"
+              className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
             >
               {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Radio className="w-4 h-4" />}
               Schedule Session
@@ -372,22 +390,22 @@ export default function LiveSessions() {
       <motion.div
         initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative mb-8 rounded-3xl overflow-hidden p-8 md:p-10 gradient-hero text-white shadow-xl"
+        className="relative mb-6 rounded-3xl overflow-hidden py-6 px-6 sm:px-8 gradient-hero text-white shadow-xl"
       >
         <div className="relative z-10">
-          <div className="flex flex-wrap items-center gap-3 mb-3">
-            <span className="flex items-center gap-1.5 text-sm font-semibold bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full">
-              <Radio className="w-4 h-4 text-red-300 animate-pulse" /> Live Sessions
+          <div className="flex flex-wrap items-center gap-3 mb-2.5">
+            <span className="flex items-center gap-1.5 text-xs font-semibold bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full">
+              <Radio className="w-3.5 h-3.5 text-red-300 animate-pulse" /> Live Sessions
             </span>
             {liveSessions.length > 0 && (
-              <span className="bg-red-500 text-white text-xs font-bold px-2.5 py-0.5 rounded-full animate-pulse">
-                {liveSessions.length} LIVE NOW
+              <span className="bg-red-500 text-white text-xs font-semibold px-2.5 py-0.5 rounded-full animate-pulse">
+                {liveSessions.length} live now
               </span>
             )}
           </div>
-          <h1 className="text-2xl md:text-4xl font-heading font-bold mb-2">Live Learning Sessions</h1>
-          <p className="text-white/80 max-w-xl text-sm md:text-base mb-5">
-            Share skills live, teach others, join peer sessions, and learn in real-time.
+          <h1 className="text-2xl md:text-3xl font-heading font-bold mb-2">Live Learning Sessions</h1>
+          <p className="text-white/80 max-w-xl text-xs md:text-sm mb-4">
+            Share skills live, teach others, join peer sessions, and learn in real time.
           </p>
           <div className="flex flex-wrap gap-4">
             <div className="rounded-2xl bg-white/15 backdrop-blur-sm px-5 py-3 text-center">
@@ -416,7 +434,7 @@ export default function LiveSessions() {
             <button
               key={tab.key}
               onClick={() => setStatusTab(tab.key)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                 statusTab === tab.key
                   ? 'bg-card text-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
@@ -434,7 +452,7 @@ export default function LiveSessions() {
               <button
                 key={f.key}
                 onClick={() => setFilter(f.key)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                   filter === f.key
                     ? 'bg-card text-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground'

@@ -58,8 +58,7 @@ function EmptyState({ onCreateClick }) {
       </p>
       <button
         onClick={onCreateClick}
-        className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white gradient-primary hover:-translate-y-0.5 transition-all duration-200"
-        style={{ boxShadow: "0 4px 16px hsl(var(--primary) / 0.3)" }}
+        className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-primary-foreground bg-primary hover:bg-primary/90 transition-colors shadow-sm"
       >
         <Plus className="w-4 h-4" />
         Create First Hub
@@ -100,7 +99,7 @@ export function ConfirmModal({ isOpen, onClose, onConfirm, title, message, isDel
           <button
             onClick={onClose}
             disabled={isDeleting}
-            className="flex-1 h-10 rounded-xl border font-medium text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
+            className="flex-1 h-10 rounded-xl border font-medium text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
             style={{ borderColor: "hsl(var(--border))" }}
           >
             Cancel
@@ -108,10 +107,10 @@ export function ConfirmModal({ isOpen, onClose, onConfirm, title, message, isDel
           <button
             onClick={onConfirm}
             disabled={isDeleting}
-            className="flex-1 h-10 rounded-xl font-semibold text-sm text-white bg-destructive hover:bg-destructive/90 transition-all flex items-center justify-center gap-2 disabled:opacity-70"
+            className="flex-1 h-10 rounded-xl font-semibold text-sm text-white bg-destructive hover:bg-destructive/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
             style={{ boxShadow: "0 4px 12px hsl(var(--destructive) / 0.25)" }}
           >
-            {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Delete"}
+            {isDeleting ? <Loader2 className="w-4 h-4 animate-spin motion-reduce:animate-none" /> : "Delete"}
           </button>
         </div>
       </motion.div>
@@ -277,7 +276,7 @@ export function CommunityModal({ onClose, onSaved, initialData = null }) {
               onChange={handleChange}
               placeholder="e.g. Python Learners Circle"
               maxLength={50}
-              className="w-full h-11 px-4 rounded-xl border outline-none text-sm transition-all"
+              className="w-full h-11 px-4 rounded-xl border outline-none text-sm transition-colors"
               style={{
                 background: "hsl(var(--background))",
                 borderColor: "hsl(var(--border))",
@@ -306,7 +305,7 @@ export function CommunityModal({ onClose, onSaved, initialData = null }) {
               placeholder="What is this community about? Who should join?"
               maxLength={500}
               rows={3}
-              className="w-full px-4 py-3 rounded-xl border outline-none text-sm resize-none transition-all"
+              className="w-full px-4 py-3 rounded-xl border outline-none text-sm resize-none transition-colors"
               style={{
                 background: "hsl(var(--background))",
                 borderColor: "hsl(var(--border))",
@@ -333,7 +332,7 @@ export function CommunityModal({ onClose, onSaved, initialData = null }) {
               name="category"
               value={form.category}
               onChange={handleChange}
-              className="w-full h-11 px-4 rounded-xl border outline-none text-sm transition-all appearance-none"
+              className="w-full h-11 px-4 rounded-xl border outline-none text-sm transition-colors appearance-none"
               style={{
                 background: "hsl(var(--background))",
                 borderColor: "hsl(var(--border))",
@@ -363,7 +362,7 @@ export function CommunityModal({ onClose, onSaved, initialData = null }) {
                   onChange={handleChange}
                   placeholder="e.g. Neuroscience, Blockchain"
                   maxLength={30}
-                  className="w-full h-11 px-4 rounded-xl border outline-none text-sm transition-all"
+                  className="w-full h-11 px-4 rounded-xl border outline-none text-sm transition-colors"
                   style={{
                     background: "hsl(var(--background))",
                     borderColor: "hsl(var(--border))",
@@ -404,7 +403,7 @@ export function CommunityModal({ onClose, onSaved, initialData = null }) {
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
               />
               <div 
-                className={`w-full h-32 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-all overflow-hidden ${imagePreview ? "border-primary/50" : "border-border hover:border-primary/40 hover:bg-muted/50"}`}
+                className={`w-full h-32 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-colors overflow-hidden ${imagePreview ? "border-primary/50" : "border-border hover:border-primary/40 hover:bg-muted/50"}`}
                 style={{ background: "hsl(var(--background))" }}
               >
                 {imagePreview ? (
@@ -412,7 +411,7 @@ export function CommunityModal({ onClose, onSaved, initialData = null }) {
                 ) : (
                   <>
                     <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-                      <svg className="w-5 h-5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg aria-hidden="true" className="w-5 h-5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2-2v12a2 2 0 002 2z" />
                       </svg>
                     </div>
@@ -431,7 +430,7 @@ export function CommunityModal({ onClose, onSaved, initialData = null }) {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 h-11 rounded-xl border text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
+              className="flex-1 h-11 rounded-xl border text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               style={{ borderColor: "hsl(var(--border))" }}
             >
               Cancel
@@ -439,11 +438,10 @@ export function CommunityModal({ onClose, onSaved, initialData = null }) {
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 h-11 rounded-xl gradient-primary text-white text-sm font-semibold flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5 disabled:opacity-60 disabled:translate-y-0"
-              style={{ boxShadow: "0 4px 16px hsl(var(--primary) / 0.28)" }}
+              className="flex-1 h-11 rounded-xl bg-primary text-primary-foreground text-sm font-semibold flex items-center justify-center gap-2 transition-colors hover:bg-primary/90 disabled:opacity-60"
             >
               {saving ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> {isEditing ? "Updating…" : "Creating…"}</>
+                <><Loader2 className="w-4 h-4 animate-spin motion-reduce:animate-none" /> {isEditing ? "Updating…" : "Creating…"}</>
               ) : (
                 <><Plus className="w-4 h-4" /> {isEditing ? "Update Hub" : "Create Hub"}</>
               )}
@@ -469,32 +467,31 @@ function CommunityCard({ community, currentUserId, onJoin, joining, onEdit, onDe
     <motion.div
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
-      className="group relative bg-card rounded-3xl border border-border/50 hover:border-primary/30 transition-all duration-300 shadow-sm hover:shadow-xl flex flex-col overflow-hidden"
+      className="group relative bg-card rounded-2xl border border-border/70 hover:border-primary/40 transition-colors duration-150 shadow-card flex flex-col overflow-hidden"
     >
-      {/* Cover image or Gradient Fallback */}
+      {/* Cover image or Monochromatic Fallback */}
       <div className="w-full h-32 relative overflow-hidden bg-muted flex-shrink-0 flex items-center justify-center">
         {community.coverImage ? (
           <>
             <img
               src={resolveImageUrl(community.coverImage)}
               alt={community.name}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              className="w-full h-full object-cover"
               loading="lazy"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
           </>
         ) : (
-          <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-primary/80 to-purple-600/80 flex items-center justify-center group-hover:scale-105 transition-transform duration-500">
-            <span className="text-5xl font-heading font-bold text-white/90 uppercase drop-shadow-md">
+          <div className="absolute inset-0 w-full h-full bg-primary/80 flex items-center justify-center">
+            <span className="text-4xl font-heading font-bold text-primary-foreground drop-shadow-xs">
               {community.name.charAt(0)}
             </span>
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent mix-blend-multiply" />
           </div>
         )}
 
         {/* Category badge */}
-        <div className="absolute top-3.5 left-4">
-          <span className="px-2.5 py-1 bg-black/40 backdrop-blur-md rounded-full text-[11px] font-semibold text-white/90 border border-white/10 uppercase tracking-wider">
+        <div className="absolute top-3 left-3">
+          <span className="px-2.5 py-0.5 bg-black/50 backdrop-blur-md rounded-full text-[11px] font-medium text-white border border-white/10">
             {community.category}
           </span>
         </div>
@@ -575,16 +572,11 @@ function CommunityCard({ community, currentUserId, onJoin, joining, onEdit, onDe
           <button
             disabled={joining === community._id}
             onClick={() => onJoin(community._id, isMember)}
-            className={`flex-1 h-10 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-1.5 ${
+            className={`flex-1 h-9 rounded-xl text-xs font-semibold transition-colors duration-150 flex items-center justify-center gap-1.5 ${
               isMember
                 ? "border border-border text-muted-foreground hover:border-destructive/50 hover:text-destructive hover:bg-destructive/5"
-                : "gradient-primary text-white hover:-translate-y-0.5"
-            } disabled:opacity-60 disabled:translate-y-0`}
-            style={
-              !isMember
-                ? { boxShadow: "0 3px 12px hsl(var(--primary) / 0.25)" }
-                : {}
-            }
+                : "bg-primary text-primary-foreground hover:bg-primary/90"
+            } disabled:opacity-60`}
           >
             {joining === community._id ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -596,7 +588,7 @@ function CommunityCard({ community, currentUserId, onJoin, joining, onEdit, onDe
           </button>
           <Link
             to={`/communities/${community._id}`}
-            className="h-10 w-10 rounded-xl border border-border flex items-center justify-center text-muted-foreground hover:border-primary/40 hover:text-primary hover:bg-accent/50 transition-all duration-200 flex-shrink-0"
+            className="h-9 w-9 rounded-xl border border-border flex items-center justify-center text-muted-foreground hover:border-primary/40 hover:text-primary hover:bg-accent/50 transition-colors duration-150 flex-shrink-0"
             title="Open community"
           >
             <ChevronRight className="w-4 h-4" />
@@ -765,10 +757,9 @@ const Communities = () => {
           </div>
           <button
             onClick={() => setShowCreate(true)}
-            className="shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white gradient-primary transition-all duration-200 hover:-translate-y-0.5"
-            style={{ boxShadow: "0 4px 16px hsl(var(--primary) / 0.28)" }}
+            className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-primary-foreground bg-primary hover:bg-primary/90 transition-colors shadow-xs"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
             Create Hub
           </button>
         </div>
@@ -782,7 +773,7 @@ const Communities = () => {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search communities…"
-              className="w-full h-10 pl-9 pr-4 rounded-xl border outline-none text-sm transition-all"
+              className="w-full h-10 pl-9 pr-4 rounded-xl border outline-none text-sm transition-colors"
               style={{
                 background: "hsl(var(--background))",
                 borderColor: "hsl(var(--border))",
@@ -805,7 +796,7 @@ const Communities = () => {
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className="flex-shrink-0 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200"
+                className="flex-shrink-0 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-colors duration-150"
                 style={{
                   background:
                     activeCategory === cat

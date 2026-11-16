@@ -1,140 +1,162 @@
-// Icon using only primary / secondary / success brand colors
-
-const BELIEFS = [
-  {
-    icon: (
-      <svg viewBox="0 0 40 40" fill="none" className="w-10 h-10">
-        <circle cx="20" cy="20" r="18" stroke="hsl(var(--primary))" strokeWidth="1.5" />
-        <path d="M13 20c0-3.86 3.13-7 7-7s7 3.14 7 7-3.13 7-7 7" stroke="hsl(var(--primary))" strokeWidth="1.8" strokeLinecap="round" />
-        <circle cx="20" cy="20" r="3" fill="hsl(var(--primary))" />
-      </svg>
-    ),
-    stat: "1 in 1",
-    truth: "Every person is skilled at something the world needs.",
-    sub: "Not someday. Right now. Your skill has value to someone out there.",
-    accentColor: "hsl(var(--primary))",
-    accentBg: "hsl(var(--primary) / 0.07)",
-  },
-  {
-    icon: (
-      <svg viewBox="0 0 40 40" fill="none" className="w-10 h-10">
-        <path d="M8 32 C12 20 20 16 28 10" stroke="hsl(var(--success))" strokeWidth="1.8" strokeLinecap="round" />
-        <path d="M28 10 L24 10 M28 10 L28 14" stroke="hsl(var(--success))" strokeWidth="1.8" strokeLinecap="round" />
-        <circle cx="8" cy="32" r="3" fill="hsl(var(--success))" />
-        <circle cx="28" cy="10" r="3" fill="hsl(var(--success))" />
-      </svg>
-    ),
-    stat: "Zero → Flow",
-    truth: "Growth happens fastest when you learn from someone who just learned it.",
-    sub: "Fresh learners make the best teachers — their memory of confusion is still intact.",
-    accentColor: "hsl(var(--success))",
-    accentBg: "hsl(var(--success) / 0.07)",
-  },
-  {
-    icon: (
-      <svg viewBox="0 0 40 40" fill="none" className="w-10 h-10">
-        <path d="M20 8 L14 22 L26 22 Z" stroke="hsl(var(--secondary))" strokeWidth="1.8" strokeLinejoin="round" />
-        <path d="M14 28 h12" stroke="hsl(var(--secondary))" strokeWidth="1.8" strokeLinecap="round" />
-        <path d="M17 32 h6" stroke="hsl(var(--secondary))" strokeWidth="1.8" strokeLinecap="round" />
-      </svg>
-    ),
-    stat: "No $ required",
-    truth: "The best exchanges aren't transactional. They're reciprocal.",
-    sub: "You give what you know. You get what you want. No credit card needed.",
-    accentColor: "hsl(var(--secondary))",
-    accentBg: "hsl(var(--secondary) / 0.07)",
-  },
-];
+import React from "react";
+import {
+  ArrowLeftRight,
+  ShieldCheck,
+  Radio,
+  Coins,
+  Sparkles,
+} from "lucide-react";
 
 export default function PhilosophySection() {
   return (
     <section
-      id="how-it-works"
-      className="py-28 px-6"
-      style={{ background: "hsl(var(--muted))" }}
+      id="bento-features"
+      className="py-24 px-4 sm:px-6 bg-muted/30 border-y border-border"
     >
       <div className="max-w-6xl mx-auto">
-        {/* Section label */}
-        <p
-          className="text-sm font-semibold tracking-widest uppercase mb-5 sf-fade-up"
-          data-reveal
-          style={{ color: "hsl(var(--primary))" }}
-        >
-          The philosophy
-        </p>
-
-        {/* Core belief statement */}
-        <div className="max-w-3xl mb-20">
-          <h2
-            className="font-heading text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.1] tracking-tight sf-fade-up sf-delay-100"
-            data-reveal
-            style={{ color: "hsl(var(--foreground))" }}
-          >
-            Everyone is good at{" "}
-            <em className="not-italic gradient-text">something.</em>
-            <br />
-            Everyone wants to learn{" "}
-            <em className="not-italic" style={{ color: "hsl(var(--success))" }}>something.</em>
+        {/* Section Header */}
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <h2 className="font-heading font-extrabold text-3xl sm:text-5xl text-foreground tracking-tight leading-tight">
+            Designed for reciprocal growth, not passive watching.
           </h2>
-          <p
-            className="mt-6 text-lg leading-relaxed sf-fade-up sf-delay-200"
-            data-reveal
-            style={{ color: "hsl(var(--muted-foreground))" }}
-          >
-            Skillfinix is built on this truth. Not on subscriptions, not on algorithms —
-            on the oldest form of human growth: teaching each other.
+          <p className="mt-4 text-base sm:text-lg text-muted-foreground leading-relaxed">
+            Skillfinix connects you with real builders for bidirectional skill transfers where both parties actively level up.
           </p>
         </div>
 
-        {/* Belief cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {BELIEFS.map((b, i) => (
-            <BeliefCard key={i} {...b} delay={`${i * 150}ms`} />
-          ))}
+        {/* ── Asymmetric Bento Grid ────────────────────────────────────────── */}
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-5">
+          {/* Bento Card 1: 2 Columns Large Feature */}
+          <div className="md:col-span-2 rounded-2xl border border-border bg-card p-8 sm:p-10 shadow-xs relative overflow-hidden group">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                <ArrowLeftRight className="w-5 h-5" />
+              </div>
+              <span className="text-xs font-semibold text-primary">
+                Feature 01
+              </span>
+            </div>
+            <h3 className="font-heading font-bold text-2xl sm:text-3xl text-foreground mb-3">
+              True bi-directional exchange
+            </h3>
+            <p className="text-muted-foreground text-sm sm:text-base leading-relaxed max-w-xl mb-8">
+              Forget one-way lectures. Every barter is an equal partnership: teach a craft you’ve honed, and in turn receive dedicated hands-on coaching in a skill you need.
+            </p>
+
+            {/* Interactive Visual Element */}
+            <div className="p-4 sm:p-5 rounded-xl bg-muted/40 border border-border flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-teach/10 border border-teach/20 flex items-center justify-center text-teach font-bold text-sm">
+                  A
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-foreground">You teach UI Architecture</div>
+                  <div className="text-xs text-teach font-medium">1 Session (45 min)</div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 text-primary">
+                <span className="text-xs font-semibold hidden sm:inline">Reciprocal</span>
+                <ArrowLeftRight className="w-4 h-4" />
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-learn/10 border border-learn/20 flex items-center justify-center text-learn font-bold text-sm">
+                  B
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-foreground">They teach Backend APIs</div>
+                  <div className="text-xs text-learn font-medium">1 Session (45 min)</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bento Card 2: 1 Column - Zero Fees */}
+          <div className="md:col-span-1 rounded-2xl border border-border bg-card p-8 shadow-xs relative overflow-hidden flex flex-col justify-between">
+            <div>
+              <div className="w-10 h-10 rounded-xl bg-teach/10 border border-teach/20 flex items-center justify-center text-teach mb-5">
+                <Coins className="w-5 h-5" />
+              </div>
+              <span className="text-xs font-semibold text-teach">
+                Feature 02
+              </span>
+              <h3 className="font-heading font-bold text-2xl text-foreground mt-2 mb-3">
+                Zero cash currency
+              </h3>
+              <p className="text-muted-foreground text-sm leading-relaxed mb-6">
+                No credit cards, hourly rates, or paywalls. Your knowledge is the only currency required to trade on Skillfinix.
+              </p>
+            </div>
+            <div className="p-4 rounded-xl bg-teach/5 border border-teach/20 text-center">
+              <span className="text-3xl font-extrabold font-display text-teach">
+                100% Free
+              </span>
+              <p className="text-xs text-muted-foreground font-medium mt-1">
+                Value-for-value peer agreements
+              </p>
+            </div>
+          </div>
+
+          {/* Bento Card 3: 1 Column - Live Collaborative Streams */}
+          <div className="md:col-span-1 rounded-2xl border border-border bg-card p-8 shadow-xs relative overflow-hidden flex flex-col justify-between">
+            <div>
+              <div className="w-10 h-10 rounded-xl bg-destructive/10 border border-destructive/20 flex items-center justify-center text-destructive mb-5">
+                <Radio className="w-5 h-5" />
+              </div>
+              <span className="text-xs font-semibold text-destructive">
+                Feature 03
+              </span>
+              <h3 className="font-heading font-bold text-2xl text-foreground mt-2 mb-3">
+                Live interactive sessions
+              </h3>
+              <p className="text-muted-foreground text-sm leading-relaxed mb-6">
+                Coordinate pair-programming, design critiques, or language drills directly via built-in audio and video studio tools.
+              </p>
+            </div>
+            <div className="flex items-center justify-between p-3.5 rounded-xl bg-background border border-border text-xs font-medium">
+              <span className="flex items-center gap-2 text-foreground font-semibold">
+                <span className="w-2 h-2 rounded-full bg-destructive animate-ping motion-reduce:animate-none" />
+                Live room
+              </span>
+              <span className="text-muted-foreground font-mono">00:45:12</span>
+            </div>
+          </div>
+
+          {/* Bento Card 4: 2 Columns - Verified Reputation & Trust */}
+          <div className="md:col-span-2 rounded-2xl border border-border bg-card p-8 sm:p-10 shadow-xs relative overflow-hidden group">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <span className="text-xs font-semibold text-primary">
+                Feature 04
+              </span>
+            </div>
+            <h3 className="font-heading font-bold text-2xl sm:text-3xl text-foreground mb-3">
+              Verified reputation and skill proof
+            </h3>
+            <p className="text-muted-foreground text-sm sm:text-base leading-relaxed max-w-xl mb-6">
+              Build a real, tangible track record. Every completed barter leaves verified feedback on your public profile, certifying your reliability and domain skill.
+            </p>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="p-3.5 rounded-xl bg-muted/40 border border-border">
+                <div className="text-xl font-bold font-display text-foreground">4.9 / 5.0</div>
+                <div className="text-xs text-muted-foreground">Community Quality Rating</div>
+              </div>
+              <div className="p-3.5 rounded-xl bg-muted/40 border border-border">
+                <div className="text-xl font-bold font-display text-foreground">98.4%</div>
+                <div className="text-xs text-muted-foreground">Swap Completion Rate</div>
+              </div>
+              <div className="p-3.5 rounded-xl bg-muted/40 border border-border col-span-2 sm:col-span-1">
+                <div className="text-xl font-bold font-display text-foreground">100%</div>
+                <div className="text-xs text-muted-foreground">Direct Peer to Peer</div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
-  );
-}
-
-function BeliefCard({ icon, stat, truth, sub, delay, accentBg }) {
-  return (
-    <div
-      className="group sf-scale-in p-8 rounded-3xl border transition-all duration-300 hover:-translate-y-1.5 cursor-default"
-      data-reveal
-      style={{
-        animationDelay: delay,
-        borderColor: "hsl(var(--border))",
-        background: "hsl(var(--card))",
-        boxShadow: "var(--shadow-card)",
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.boxShadow = "var(--shadow-card-hover)";
-        e.currentTarget.style.borderColor = "hsl(var(--primary) / 0.25)";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.boxShadow = "var(--shadow-card)";
-        e.currentTarget.style.borderColor = "hsl(var(--border))";
-      }}
-    >
-      <div className="mb-5 w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: accentBg }}>
-        {icon}
-      </div>
-      <div
-        className="font-heading text-2xl font-bold mb-3"
-        style={{ color: "hsl(var(--foreground))" }}
-      >
-        {stat}
-      </div>
-      <p
-        className="text-base font-medium mb-2 leading-snug"
-        style={{ color: "hsl(var(--foreground))" }}
-      >
-        {truth}
-      </p>
-      <p className="text-sm leading-relaxed" style={{ color: "hsl(var(--muted-foreground))" }}>
-        {sub}
-      </p>
-    </div>
   );
 }

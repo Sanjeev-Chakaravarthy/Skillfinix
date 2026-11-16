@@ -31,9 +31,10 @@ const StatusBadge = ({ status }) => {
   );
 };
 
+import { resolveAvatarUrl } from "@/lib/avatar";
+
 const getAvatar = (user) => {
-  if (user?.avatar) return user.avatar;
-  return `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'U')}&background=6366f1&color=fff&bold=true`;
+  return resolveAvatarUrl(user?.avatar, user?.name);
 };
 
 const LEVEL_COLORS = {

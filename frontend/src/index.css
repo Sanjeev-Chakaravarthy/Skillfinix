@@ -1,10 +1,17 @@
+/* Hallmark · shape: Workbench · genre: modern-minimal · theme: Coral (by request) · job: try · draw: 7f3a2c
+ * paper: oklch(97% 0.006 55) · accent: oklch(54% 0.165 29) · display: General Sans · body: General Sans · hero: Settled · nav: kept · footer: kept · signature: bilateral skill exchange
+ * axes: light/grotesk-sans/warm · posture: restrained · contrast: pass · fold: pass · v2.0.0 */
+/* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V5 · weakest: H, tactile warm paper and coral letterpress signals */
+/* Hallmark · dropped "onError={(e) => { e.target.onerror = null; e.target.src = `https://ui-avatars.com/api/?name=I&background=6366f1&color=fff&size=32`; }}" · replaced with clean SVG fallback (F9) */
+/* Hallmark · dropped "onError={(e) => { e.target.onerror = null; e.target.src = `https://ui-avatars.com/api/?name=I&background=6366f1&color=fff&size=56`; }}" · replaced with clean SVG fallback (F9) */
+@import url("./tokens.css");
+@import url("./base.css");
+@import url('https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
 @import "@fontsource/inter/400.css";
 @import "@fontsource/inter/500.css";
 @import "@fontsource/inter/600.css";
 @import "@fontsource/inter/700.css";
-@import "@fontsource/sora/400.css";
-@import "@fontsource/sora/600.css";
-@import "@fontsource/sora/700.css";
 
 @tailwind base;
 @tailwind components;
@@ -12,114 +19,133 @@
 
 @layer base {
   :root {
-    /* Core Colors */
-    --background: 240 20% 99%;
-    --foreground: 240 10% 10%;
+    /* Core Canvas & Text (Hallmark Coral: warm cotton paper & deep umber ink) */
+    --background: 40 20% 97%;
+    --foreground: 30 10% 14%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 10%;
+    --card: 40 25% 99%;
+    --card-foreground: 30 10% 14%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 10%;
+    --popover: 40 25% 99%;
+    --popover-foreground: 30 10% 14%;
 
-    /* Primary - Indigo */
-    --primary: 238 84% 60%;
+    /* Primary - Vibrant Letterpress Coral */
+    --primary: 11 76% 52%;
     --primary-foreground: 0 0% 100%;
-    --primary-light: 238 84% 70%;
-    --primary-dark: 238 84% 50%;
+    --primary-light: 11 82% 62%;
+    --primary-dark: 11 76% 44%;
 
-    /* Secondary - Violet */
-    --secondary: 270 70% 60%;
-    --secondary-foreground: 0 0% 100%;
+    /* Secondary - Deep Atelier Board */
+    --secondary: 30 12% 20%;
+    --secondary-foreground: 40 20% 97%;
 
-    /* Accent - Soft Purple */
-    --accent: 255 80% 95%;
-    --accent-foreground: 238 84% 50%;
+    /* Accent - Delicate Coral Tint */
+    --accent: 15 45% 95%;
+    --accent-foreground: 11 76% 44%;
 
-    --muted: 240 10% 96%;
-    --muted-foreground: 240 5% 46%;
+    /* Teach & Learn Skill Barter Tokens (Tactile Laurel Sage & Warm Sienna) */
+    --teach: 154 48% 34%;
+    --teach-foreground: 0 0% 100%;
+    --learn: 18 72% 50%;
+    --learn-foreground: 0 0% 100%;
 
-    --destructive: 0 84% 60%;
+    --muted: 38 15% 93%;
+    --muted-foreground: 30 8% 44%;
+
+    --destructive: 0 80% 55%;
     --destructive-foreground: 0 0% 100%;
 
     /* Borders & Inputs */
-    --border: 240 10% 90%;
-    --input: 240 10% 90%;
-    --ring: 238 84% 60%;
+    --border: 35 12% 88%;
+    --input: 35 12% 88%;
+    --ring: 11 76% 52%;
 
-    --radius: 0.75rem;
+    --radius: 0.875rem;
 
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(238 84% 60%) 0%, hsl(270 70% 60%) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(238 84% 60%) 0%, hsl(270 70% 60%) 50%, hsl(300 70% 65%) 100%);
-    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(240 20% 98%) 100%);
-    --gradient-sidebar: linear-gradient(180deg, hsl(240 20% 99%) 0%, hsl(240 20% 97%) 100%);
+    /* Gradients (Hallmark: Coral Single-Hue & Luxury Board) */
+    --gradient-primary: linear-gradient(135deg, hsl(11 76% 52%) 0%, hsl(18 80% 48%) 100%);
+    --gradient-hero: linear-gradient(145deg, hsl(28 14% 16%) 0%, hsl(24 16% 11%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(40 25% 99%) 0%, hsl(40 20% 97%) 100%);
+    --gradient-sidebar: linear-gradient(180deg, hsl(40 25% 99%) 0%, hsl(40 20% 96%) 100%);
+    --gradient-teach: linear-gradient(135deg, hsl(154 48% 34%) 0%, hsl(160 55% 36%) 100%);
+    --gradient-learn: linear-gradient(135deg, hsl(18 72% 50%) 0%, hsl(24 76% 52%) 100%);
 
-    /* Shadows */
-    --shadow-sm: 0 1px 2px 0 hsl(240 10% 10% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(240 10% 10% / 0.07), 0 2px 4px -2px hsl(240 10% 10% / 0.05);
-    --shadow-lg: 0 10px 15px -3px hsl(240 10% 10% / 0.08), 0 4px 6px -4px hsl(240 10% 10% / 0.05);
-    --shadow-xl: 0 20px 25px -5px hsl(240 10% 10% / 0.1), 0 8px 10px -6px hsl(240 10% 10% / 0.05);
-    --shadow-glow: 0 0 40px hsl(238 84% 60% / 0.2);
-    --shadow-card: 0 2px 8px hsl(240 10% 10% / 0.06), 0 1px 2px hsl(240 10% 10% / 0.04);
-    --shadow-card-hover: 0 8px 24px hsl(240 10% 10% / 0.1), 0 4px 8px hsl(240 10% 10% / 0.06);
+    /* Layered Tactile Shadows */
+    --shadow-sm: 0 1px 2px 0 rgba(40, 30, 20, 0.04);
+    --shadow-md: 0 4px 6px -1px rgba(40, 30, 20, 0.05), 0 2px 4px -2px rgba(40, 30, 20, 0.04);
+    --shadow-lg: 0 10px 15px -3px rgba(40, 30, 20, 0.06), 0 4px 6px -4px rgba(40, 30, 20, 0.03);
+    --shadow-xl: 0 20px 25px -5px rgba(40, 30, 20, 0.08), 0 8px 10px -6px rgba(40, 30, 20, 0.03);
+    --shadow-glow: 0 0 35px hsl(11 76% 52% / 0.22);
+    --shadow-card: 0 1px 3px 0 rgba(40, 30, 20, 0.05), 0 1px 2px -1px rgba(40, 30, 20, 0.04);
+    --shadow-card-hover: 0 10px 24px -4px rgba(40, 30, 20, 0.09), 0 4px 8px -2px rgba(40, 30, 20, 0.04);
 
     /* Sidebar */
-    --sidebar-background: 240 20% 99%;
-    --sidebar-foreground: 240 5% 26%;
-    --sidebar-primary: 238 84% 60%;
+    --sidebar-background: 40 22% 98%;
+    --sidebar-foreground: 30 10% 16%;
+    --sidebar-primary: 11 76% 52%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 255 80% 97%;
-    --sidebar-accent-foreground: 238 84% 50%;
-    --sidebar-border: 240 10% 92%;
-    --sidebar-ring: 238 84% 60%;
+    --sidebar-accent: 15 45% 95%;
+    --sidebar-accent-foreground: 11 76% 44%;
+    --sidebar-border: 35 12% 88%;
+    --sidebar-ring: 11 76% 52%;
 
-    /* Success, Warning, Info */
-    --success: 142 76% 45%;
+    /* Semantic Status */
+    --success: 154 48% 34%;
     --success-foreground: 0 0% 100%;
-    --warning: 38 92% 50%;
+    --warning: 35 92% 48%;
     --warning-foreground: 0 0% 100%;
-    --info: 199 89% 48%;
+    --info: 198 80% 46%;
     --info-foreground: 0 0% 100%;
   }
 
   .dark {
-    --background: 240 10% 8%;
-    --foreground: 0 0% 95%;
+    /* Warm Espresso & Fine Dark Paper */
+    --background: 24 12% 9%;
+    --foreground: 40 20% 96%;
 
-    --card: 240 10% 12%;
-    --card-foreground: 0 0% 95%;
+    --card: 24 10% 13%;
+    --card-foreground: 40 20% 96%;
 
-    --popover: 240 10% 12%;
-    --popover-foreground: 0 0% 95%;
+    --popover: 24 10% 14%;
+    --popover-foreground: 40 20% 96%;
 
-    --primary: 238 84% 65%;
+    --primary: 11 82% 60%;
     --primary-foreground: 0 0% 100%;
+    --primary-light: 11 84% 68%;
+    --primary-dark: 11 78% 50%;
 
-    --secondary: 270 70% 65%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 30 10% 25%;
+    --secondary-foreground: 40 20% 96%;
 
-    --muted: 240 10% 18%;
-    --muted-foreground: 240 5% 65%;
+    --accent: 15 25% 18%;
+    --accent-foreground: 11 82% 65%;
 
-    --accent: 255 30% 20%;
-    --accent-foreground: 255 80% 80%;
+    --teach: 154 50% 45%;
+    --teach-foreground: 0 0% 100%;
+    --learn: 18 76% 56%;
+    --learn-foreground: 0 0% 100%;
 
-    --destructive: 0 62% 50%;
+    --muted: 24 10% 17%;
+    --muted-foreground: 30 10% 62%;
+
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 240 10% 20%;
-    --input: 240 10% 20%;
-    --ring: 238 84% 65%;
+    --border: 24 8% 20%;
+    --input: 24 8% 20%;
+    --ring: 11 82% 60%;
 
-    --sidebar-background: 240 10% 10%;
-    --sidebar-foreground: 240 5% 80%;
-    --sidebar-primary: 238 84% 65%;
+    --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.4), 0 1px 2px -1px rgba(0, 0, 0, 0.3);
+    --shadow-card-hover: 0 14px 30px -4px rgba(0, 0, 0, 0.6), 0 6px 12px -2px rgba(0, 0, 0, 0.35);
+
+    --sidebar-background: 24 12% 11%;
+    --sidebar-foreground: 40 15% 85%;
+    --sidebar-primary: 11 82% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 255 30% 18%;
-    --sidebar-accent-foreground: 255 80% 80%;
-    --sidebar-border: 240 10% 18%;
-    --sidebar-ring: 238 84% 65%;
+    --sidebar-accent: 15 25% 18%;
+    --sidebar-accent-foreground: 11 82% 65%;
+    --sidebar-border: 24 8% 18%;
+    --sidebar-ring: 11 82% 60%;
   }
 }
 
@@ -134,10 +160,14 @@
     height: 100%;
   }
 
+  html,
+  body {
+    overflow-x: clip;
+  }
+
   body {
     margin: 0;
     padding: 0;
-    overflow-x: hidden;
   }
 
   html {
@@ -184,7 +214,10 @@
 
   h1,
   h2,
-  h3,
+  h3 {
+    @apply font-heading;
+    text-wrap: balance;
+  }
   h4,
   h5,
   h6 {
@@ -289,7 +322,30 @@
     background: rgba(255, 255, 255, 0.14);
     border: 1px solid rgba(255, 255, 255, 0.20);
     backdrop-filter: blur(8px);
-    color: #fff;
+    color: hsl(var(--primary-foreground));
+  }
+
+  /* ── Skill Barter Distinct Badges (Teach vs Learn) ── */
+  .badge-teach {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold;
+    background: hsl(var(--teach) / 0.10);
+    color: hsl(var(--teach));
+    border: 1px solid hsl(var(--teach) / 0.25);
+  }
+
+  .badge-learn {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold;
+    background: hsl(var(--learn) / 0.10);
+    color: hsl(var(--learn));
+    border: 1px solid hsl(var(--learn) / 0.25);
+  }
+
+  .glass-panel {
+    @apply bg-card/80 backdrop-blur-xl border border-border shadow-card;
+  }
+
+  .hover-lift {
+    @apply transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] cursor-pointer;
   }
 }
 
@@ -535,7 +591,7 @@
 }
 
 .sf-fade-up {
-  opacity: 0;
+  opacity: 1;
 }
 
 .sf-fade-up.sf-visible {
@@ -543,7 +599,7 @@
 }
 
 .sf-slide-left {
-  opacity: 0;
+  opacity: 1;
 }
 
 .sf-slide-left.sf-visible {
@@ -551,7 +607,7 @@
 }
 
 .sf-slide-right {
-  opacity: 0;
+  opacity: 1;
 }
 
 .sf-slide-right.sf-visible {
@@ -559,7 +615,7 @@
 }
 
 .sf-scale-in {
-  opacity: 0;
+  opacity: 1;
 }
 
 .sf-scale-in.sf-visible {
@@ -613,12 +669,12 @@
   background: hsl(var(--primary) / 0.08);
   border: 1px solid hsl(var(--primary) / 0.20);
   color: hsl(var(--primary));
-  padding: 6px 16px;
+  padding: 4px 12px;
   border-radius: 999px;
   font-size: 0.82rem;
   font-weight: 500;
   white-space: nowrap;
-  transition: all 0.2s ease;
+  transition: transform 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
   cursor: pointer;
 }
 

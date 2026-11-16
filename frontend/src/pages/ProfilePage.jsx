@@ -24,12 +24,11 @@ import { CustomButton } from "@/components/CustomButton";
 import { useToast } from "@/components/ui/use-toast";
 import { resolveMediaUrl } from "@/config/api";
 
+import { getHallmarkAvatar, resolveAvatarUrl } from "@/lib/avatar";
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-const getDefaultAvatar = (name) => {
-  const encoded = encodeURIComponent(name || "U");
-  return `https://ui-avatars.com/api/?name=${encoded}&background=6366f1&color=fff&size=200&bold=true&rounded=true`;
-};
+const getDefaultAvatar = (name) => getHallmarkAvatar(name);
 
 const getAvatarUrl = (user) => {
   if (!user?.avatar) return getDefaultAvatar(user?.name);
@@ -124,7 +123,7 @@ const UserNotFound = ({ message, onBack, onHome }) => (
           {message || "User Not Found"}
         </h2>
         <p className="text-muted-foreground max-w-sm text-sm leading-relaxed">
-          The profile you're looking for doesn't exist, has been removed, or the
+          The profile you’re looking for doesn’t exist, has been removed, or the
           link is invalid.
         </p>
       </div>
@@ -142,17 +141,40 @@ const UserNotFound = ({ message, onBack, onHome }) => (
 
 // ─── Stat Pill ────────────────────────────────────────────────────────────────
 
-const StatPill = ({ icon: Icon, label, value, color = "primary" }) => (
-  <div
-    className={`flex-1 flex flex-col items-center justify-center p-4 rounded-2xl bg-${color}/5 border border-${color}/10 gap-1 min-w-[80px]`}
-  >
-    <Icon className={`w-4 h-4 text-${color} mb-0.5`} />
-    <span className={`text-xl font-bold text-${color} font-heading leading-none`}>
-      {value}
-    </span>
-    <span className="text-[11px] text-muted-foreground font-medium">{label}</span>
-  </div>
-);
+const STAT_STYLES = {
+  primary: {
+    bg: "bg-primary/10 border-primary/20",
+    text: "text-primary",
+  },
+  secondary: {
+    bg: "bg-secondary/10 border-secondary/20",
+    text: "text-secondary",
+  },
+  teach: {
+    bg: "bg-emerald-500/10 border-emerald-500/20",
+    text: "text-emerald-600 dark:text-emerald-400",
+  },
+  learn: {
+    bg: "bg-sky-500/10 border-sky-500/20",
+    text: "text-sky-600 dark:text-sky-400",
+  },
+};
+
+const StatPill = ({ icon: Icon, label, value, variant = "primary", color }) => {
+  const chosenVariant = variant || (color === "secondary" ? "secondary" : "primary");
+  const style = STAT_STYLES[chosenVariant] || STAT_STYLES.primary;
+  return (
+    <div
+      className={`flex-1 flex flex-col items-center justify-center p-4 rounded-2xl ${style.bg} border gap-1 min-w-[80px] shadow-sm`}
+    >
+      <Icon className={`w-4 h-4 ${style.text} mb-0.5`} />
+      <span className={`text-xl font-bold ${style.text} font-heading leading-none`}>
+        {value}
+      </span>
+      <span className="text-[11px] text-muted-foreground font-medium">{label}</span>
+    </div>
+  );
+};
 
 // ─── Tag Cloud ────────────────────────────────────────────────────────────────
 
@@ -374,7 +396,7 @@ const ProfilePage = () => {
         <div
           className="h-36 relative"
           style={{
-            background: "var(--gradient-hero, linear-gradient(135deg, hsl(238 84% 60%) 0%, hsl(262 83% 58%) 100%))",
+            background: "var(--gradient-hero)",
             boxShadow: "inset 0 -40px 60px rgba(0,0,0,0.12)",
           }}
         >
@@ -444,7 +466,7 @@ const ProfilePage = () => {
               <CustomButton
                 variant={isFollowing ? "outline" : "gradient"}
                 className={[
-                  "flex-1 sm:flex-none font-semibold transition-all",
+                  "flex-1 sm:flex-none font-semibold transition-colors",
                   isFollowing
                     ? "border-primary text-primary hover:bg-destructive/10 hover:text-destructive hover:border-destructive"
                     : "shadow-lg shadow-primary/20",
@@ -486,25 +508,25 @@ const ProfilePage = () => {
               icon={Star}
               label="Skills"
               value={skills.length || 0}
-              color="primary"
+              variant="teach"
             />
             <StatPill
               icon={BookOpen}
               label="Interests"
               value={interests.length || 0}
-              color="secondary"
+              variant="learn"
             />
             <StatPill
               icon={Users}
               label="Followers"
               value={followStatusLoaded ? followerCount : "—"}
-              color="primary"
+              variant="primary"
             />
             <StatPill
               icon={Zap}
               label="Swaps"
               value={profileUser.swapCount ?? "—"}
-              color="primary"
+              variant="secondary"
             />
           </div>
 
@@ -514,14 +536,14 @@ const ProfilePage = () => {
             {/* Left: About */}
             <div className="md:col-span-2 space-y-6">
               <section>
-                <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <span className="w-1 h-4 bg-primary rounded-full inline-block" />
+                <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <span className="w-1.5 h-4 bg-primary rounded-full inline-block" />
                   About
                 </h3>
-                <div className="p-5 rounded-2xl bg-muted/30 border border-border/50 text-sm leading-relaxed text-foreground/85 whitespace-pre-wrap min-h-[80px]">
+                <div className="p-5 rounded-2xl bg-muted/30 border border-border/60 text-sm leading-relaxed text-foreground/85 whitespace-pre-wrap min-h-[80px]">
                   {profileUser.bio || (
                     <span className="italic text-muted-foreground">
-                      This user hasn't written a bio yet.
+                      This user has not written a bio yet.
                     </span>
                   )}
                 </div>
@@ -530,13 +552,13 @@ const ProfilePage = () => {
               {/* Can Teach (large view) */}
               {skills.length > 0 && (
                 <section>
-                  <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-                    <span className="w-1 h-4 bg-primary rounded-full inline-block" />
+                  <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                    <span className="w-1.5 h-4 bg-emerald-500 rounded-full inline-block" />
                     Can Teach
                   </h3>
                   <TagCloud
                     items={skills}
-                    colorClass="bg-primary/10 text-primary border-primary/20"
+                    colorClass="badge-teach bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/25 shadow-xs"
                     emptyText="No skills listed"
                   />
                 </section>
@@ -547,47 +569,47 @@ const ProfilePage = () => {
             <div className="space-y-5">
               {/* Can Teach (sidebar — shown when col-1 view) */}
               {skills.length === 0 && (
-                <section className="p-5 rounded-2xl bg-primary/5 border border-primary/10">
+                <section className="p-5 rounded-2xl bg-emerald-500/5 border border-emerald-500/15">
                   <h3 className="mb-3 text-sm font-semibold text-foreground flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-primary" />
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
                     Can Teach
                   </h3>
                   <TagCloud
                     items={skills}
-                    colorClass="bg-primary/10 text-primary border-primary/20"
+                    colorClass="badge-teach bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/25"
                     emptyText="No skills listed yet"
                   />
                 </section>
               )}
 
               {/* Wants to Learn */}
-              <section className="p-5 rounded-2xl bg-secondary/5 border border-secondary/10">
+              <section className="p-5 rounded-2xl bg-sky-500/5 border border-sky-500/15">
                 <h3 className="mb-3 text-sm font-semibold text-foreground flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-secondary" />
+                  <span className="w-2 h-2 rounded-full bg-sky-500" />
                   Wants to Learn
                 </h3>
                 <TagCloud
                   items={interests}
-                  colorClass="bg-secondary/10 text-secondary border-secondary/20"
+                  colorClass="badge-learn bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/25"
                   emptyText="No interests listed yet"
                 />
               </section>
 
               {/* Quick Info Card */}
-              <section className="p-5 rounded-2xl bg-muted/30 border border-border/50 space-y-3">
+              <section className="p-5 rounded-2xl bg-muted/30 border border-border/60 space-y-3">
                 <h3 className="text-sm font-semibold text-foreground">Quick Info</h3>
                 <div className="space-y-2 text-sm text-muted-foreground">
                   <div className="flex items-center gap-2">
-                    <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
+                    <Calendar className="w-3.5 h-3.5 flex-shrink-0 text-muted-foreground/80" />
                     <span>Member since {formatJoinDate(profileUser.createdAt)}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Briefcase className="w-3.5 h-3.5 flex-shrink-0" />
+                    <Briefcase className="w-3.5 h-3.5 flex-shrink-0 text-muted-foreground/80" />
                     <span>{profileUser.role || "Student"}</span>
                   </div>
                   {profileUser.location && profileUser.location !== "Earth" && (
                     <div className="flex items-center gap-2">
-                      <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                      <MapPin className="w-3.5 h-3.5 flex-shrink-0 text-muted-foreground/80" />
                       <span>{profileUser.location}</span>
                     </div>
                   )}

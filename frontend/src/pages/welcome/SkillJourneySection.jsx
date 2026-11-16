@@ -7,9 +7,9 @@ const JOURNEYS = [
     swap: "Taught Priya photography → learned French conversation",
     swapPartner: "Lucas (Paris)",
     duration: "8 weeks",
-    accentColor: "hsl(var(--primary))",
-    accentBg: "hsl(var(--primary) / 0.08)",
-    progressFill: "hsl(var(--primary))",
+    accentColor: "hsl(var(--teach))",
+    accentBg: "hsl(var(--teach) / 0.12)",
+    progressFill: "hsl(var(--teach))",
   },
   {
     name: "Arjun M.",
@@ -18,9 +18,9 @@ const JOURNEYS = [
     swap: "Taught Arjun guitar → learned Figma & UI design",
     swapPartner: "Meera (Bangalore)",
     duration: "12 weeks",
-    accentColor: "hsl(var(--success))",
-    accentBg: "hsl(var(--success) / 0.08)",
-    progressFill: "hsl(var(--success))",
+    accentColor: "hsl(var(--learn))",
+    accentBg: "hsl(var(--learn) / 0.12)",
+    progressFill: "hsl(var(--learn))",
   },
   {
     name: "Chioma A.",
@@ -29,9 +29,9 @@ const JOURNEYS = [
     swap: "Taught Chioma Python → learned Arabic calligraphy",
     swapPartner: "Khalid (Dubai)",
     duration: "10 weeks",
-    accentColor: "hsl(var(--secondary))",
-    accentBg: "hsl(var(--secondary) / 0.08)",
-    progressFill: "hsl(var(--secondary))",
+    accentColor: "hsl(var(--primary))",
+    accentBg: "hsl(var(--primary) / 0.12)",
+    progressFill: "hsl(var(--primary))",
   },
 ];
 
@@ -39,31 +39,21 @@ export default function SkillJourneySection() {
   return (
     <section
       id="journeys"
-      className="py-28 px-6"
-      style={{ background: "hsl(var(--muted))" }}
+      className="py-28 px-6 bg-muted/40 border-t border-border"
     >
       <div className="max-w-6xl mx-auto">
         <div className="max-w-xl mb-16">
-          <p
-            className="text-sm font-semibold tracking-widest uppercase mb-4 sf-fade-up"
-            data-reveal
-            style={{ color: "hsl(var(--primary))" }}
-          >
-            Skill journeys
-          </p>
           <h2
-            className="font-heading text-4xl sm:text-5xl font-bold leading-[1.1] tracking-tight sf-fade-up sf-delay-100"
+            className="font-heading text-4xl sm:text-5xl font-bold leading-[1.1] tracking-tight sf-fade-up text-foreground"
             data-reveal
-            style={{ color: "hsl(var(--foreground))" }}
           >
             Not testimonials.
             <br />
             Real proof of growth.
           </h2>
           <p
-            className="mt-4 text-lg leading-relaxed sf-fade-up sf-delay-200"
+            className="mt-4 text-lg leading-relaxed sf-fade-up sf-delay-100 text-muted-foreground"
             data-reveal
-            style={{ color: "hsl(var(--muted-foreground))" }}
           >
             Before-and-after stories from people who showed up, swapped skills,
             and changed their trajectory.
@@ -85,35 +75,31 @@ function JourneyCard({ journey, delay }) {
 
   return (
     <div
-      className="group sf-fade-up rounded-3xl border overflow-hidden transition-all duration-300 hover:-translate-y-1.5 cursor-default"
+      className="group sf-fade-up rounded-2xl border border-border bg-card shadow-xs overflow-hidden transition-colors duration-200 cursor-default"
       data-reveal
       style={{
         animationDelay: delay,
-        borderColor: "hsl(var(--border))",
-        background: "hsl(var(--card))",
-        boxShadow: "var(--shadow-card)",
       }}
       onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "var(--shadow-card-hover)"; }}
       onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "var(--shadow-card)"; }}
     >
       {/* Card header */}
       <div
-        className="px-6 pt-6 pb-5 flex items-center justify-between border-b"
-        style={{ borderColor: "hsl(var(--border))" }}
+        className="px-6 pt-6 pb-5 flex items-center justify-between border-b border-border"
       >
         <div className="flex items-center gap-3">
           <div
-            className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm font-bold flex-shrink-0 gradient-primary"
+            className="w-9 h-9 rounded-lg flex items-center justify-center text-primary-foreground text-sm font-bold flex-shrink-0 bg-primary"
           >
             {name.charAt(0)}
           </div>
           <div>
-            <p className="font-semibold text-sm" style={{ color: "hsl(var(--foreground))" }}>{name}</p>
-            <p className="text-xs" style={{ color: "hsl(var(--muted-foreground))" }}>{duration} journey</p>
+            <p className="font-semibold text-sm text-foreground">{name}</p>
+            <p className="text-xs text-muted-foreground">{duration} journey</p>
           </div>
         </div>
         <span
-          className="text-xs font-medium px-2.5 py-1 rounded-full"
+          className="text-xs font-medium px-2.5 py-1 rounded-md border border-border"
           style={{ background: accentBg, color: accentColor }}
         >
           ✓ Verified swap
@@ -133,11 +119,11 @@ function JourneyCard({ journey, delay }) {
 
         {/* Swap info */}
         <div
-          className="flex items-start gap-3 py-3 px-4 rounded-2xl"
+          className="flex items-start gap-3 py-3 px-4 rounded-xl border border-border/50"
           style={{ background: accentBg }}
         >
           <div
-            className="flex-shrink-0 w-7 h-7 rounded-xl flex items-center justify-center text-white text-xs font-bold mt-0.5 gradient-primary"
+            className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-primary-foreground text-xs font-bold mt-0.5 bg-primary"
           >
             ⇄
           </div>
@@ -145,10 +131,10 @@ function JourneyCard({ journey, delay }) {
             <p className="text-xs font-semibold mb-0.5" style={{ color: accentColor }}>
               The exchange
             </p>
-            <p className="text-xs leading-relaxed" style={{ color: "hsl(var(--foreground) / 0.65)" }}>
+            <p className="text-xs leading-relaxed text-foreground/80">
               {swap}
             </p>
-            <p className="text-xs mt-1 font-medium" style={{ color: "hsl(var(--muted-foreground))" }}>
+            <p className="text-xs mt-1 font-medium text-muted-foreground">
               with {swapPartner}
             </p>
           </div>
@@ -175,26 +161,25 @@ function ProgressRow({ label, tag, skill, value, trackColor, fillColor, animated
       <div className="flex items-center justify-between mb-2">
         <div>
           <span
-            className="text-[10px] font-bold uppercase tracking-wider mr-2"
-            style={{ color: "hsl(var(--muted-foreground))" }}
+            className="text-xs font-semibold text-muted-foreground mr-2"
           >
             {label}
           </span>
           <span
-            className="text-xs font-medium px-2 py-0.5 rounded-full"
+            className="text-xs font-medium px-2 py-0.5 rounded-md"
             style={{ background: trackColor, color: "hsl(var(--muted-foreground))" }}
           >
             {tag}
           </span>
         </div>
-        <span className="text-xs font-semibold" style={{ color: "hsl(var(--muted-foreground))" }}>
+        <span className="text-xs font-semibold text-muted-foreground">
           {value}%
         </span>
       </div>
-      <p className="text-xs mb-2 leading-snug" style={{ color: "hsl(var(--foreground) / 0.60)" }}>
+      <p className="text-xs mb-2 leading-snug text-foreground/70">
         {skill}
       </p>
-      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "hsl(var(--border))" }}>
+      <div className="h-1.5 rounded-full overflow-hidden bg-muted">
         <div
           className="h-full rounded-full"
           style={{

@@ -12,9 +12,9 @@ import { ConfirmModal, CommunityModal } from "./Communities";
 import { resolveMediaUrl } from "@/config/api";
 
 /* ─── Avatar helper ─────────────────────────────────────────────── */
-const avatarUrl = (u) =>
-  u?.avatar ||
-  `https://ui-avatars.com/api/?name=${encodeURIComponent(u?.name || "U")}&background=6366f1&color=fff&size=80&bold=true`;
+import { resolveAvatarUrl } from "@/lib/avatar";
+
+const avatarUrl = (u) => resolveAvatarUrl(u?.avatar, u?.name);
 
 /* ─── Date formatter ────────────────────────────────────────────── */
 const fmt = (d) =>
@@ -90,10 +90,10 @@ function PostCard({ post, communityId, currentUserId, onLikeToggle }) {
         <button
           onClick={handleLike}
           disabled={liking || !currentUserId}
-          className={`flex items-center gap-1.5 text-xs font-medium transition-colors px-3 py-1.5 rounded-lg ${
+          className={`flex items-center gap-1.5 text-xs font-semibold transition-colors px-3 py-1.5 rounded-lg ${
             isLiked
-              ? "text-red-500 bg-red-50"
-              : "text-muted-foreground hover:text-red-500 hover:bg-red-50/50"
+              ? "text-red-500 bg-red-500/10 border border-red-500/20"
+              : "text-muted-foreground hover:text-red-500 hover:bg-red-500/10"
           } disabled:opacity-50`}
         >
           <Heart className={`w-3.5 h-3.5 ${isLiked ? "fill-current" : ""}`} />

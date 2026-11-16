@@ -23,10 +23,7 @@ export default function Welcome() {
   }, []);
 
   return (
-    <div
-      className="w-full overflow-x-hidden"
-      style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
-    >
+    <div className="w-full bg-background text-foreground">
       {/* Sticky nav */}
       <WelcomeNav />
 

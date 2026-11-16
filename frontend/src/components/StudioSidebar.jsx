@@ -8,25 +8,17 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 
+import { resolveAvatarUrl, getHallmarkAvatar } from "@/lib/avatar";
+
 const StudioSidebar = () => {
   const location = useLocation();
   const { user } = useAuth();
 
   // Helper function to generate a default avatar
-  const getDefaultAvatar = (name) => {
-    if (!name) return "https://ui-avatars.com/api/?name=User&background=6366f1&color=fff&size=200&bold=true";
-    const encodedName = encodeURIComponent(name);
-    return `https://ui-avatars.com/api/?name=${encodedName}&background=6366f1&color=fff&size=200&bold=true`;
-  };
+  const getDefaultAvatar = (name) => getHallmarkAvatar(name || "User");
 
   // Helper function to get proper avatar URL
-  const getAvatarUrl = (avatarPath) => {
-    if (!avatarPath) return getDefaultAvatar(user?.name);
-    // If it's a full URL (Google OAuth, Supabase, etc.), use it directly
-    if (avatarPath.startsWith("http")) return avatarPath;
-    // Otherwise, return default
-    return getDefaultAvatar(user?.name);
-  };
+  const getAvatarUrl = (avatarPath) => resolveAvatarUrl(avatarPath, user?.name);
 
   const menuItems = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/studio" },

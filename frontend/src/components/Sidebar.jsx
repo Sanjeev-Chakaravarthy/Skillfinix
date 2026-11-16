@@ -1,56 +1,107 @@
-import React, { useState, useEffect } from 'react';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
-  Home, Search, Repeat, MessageSquare, History, BookOpen,
-  Heart, Trophy, ListVideo, Video, Clock, ThumbsUp, Compass,
-  TrendingUp, Radio, Play, PlusCircle, ChevronDown, X,
-  HelpCircle, Globe, Users, Layers, ArrowLeftRight, Code2,
-  Server, Brain, Palette, Cpu, Music, Dumbbell, Briefcase,
-  Camera, BarChart2, Mic2, ChefHat, Shield, Smartphone,
-  Flame
-} from 'lucide-react';
-import { useApp } from '@/context/AppContext';
-import { useAuth } from '@/context/AuthContext';
-import { cn } from '@/lib/utils';
-import { motion, AnimatePresence } from 'framer-motion';
-import api from '@/api/axios';
+  Home,
+  Search,
+  Repeat,
+  MessageSquare,
+  History,
+  BookOpen,
+  Heart,
+  Trophy,
+  ListVideo,
+  Video,
+  Clock,
+  ThumbsUp,
+  Compass,
+  TrendingUp,
+  Radio,
+  Play,
+  PlusCircle,
+  ChevronDown,
+  X,
+  HelpCircle,
+  Globe,
+  Users,
+  Layers,
+  ArrowLeftRight,
+  Code2,
+  Server,
+  Brain,
+  Palette,
+  Cpu,
+  Music,
+  Dumbbell,
+  Briefcase,
+  Camera,
+  BarChart2,
+  Mic2,
+  ChefHat,
+  Shield,
+  Smartphone,
+  Flame,
+} from "lucide-react";
+import { useApp } from "@/context/AppContext";
+import { useAuth } from "@/context/AuthContext";
+import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
+import api from "@/api/axios";
 
-// Avatar helper
+import { resolveAvatarUrl } from "@/lib/avatar";
+
+// Avatar helper (Hallmark clean atelier stamp)
 const getAvatarUrl = (user) => {
-  if (user?.avatar) return user.avatar;
-  return `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&background=6366f1&color=fff&size=200&bold=true`;
+  return resolveAvatarUrl(user?.avatar, user?.name);
 };
 
 // Map icon-name strings (stored in DB) to Lucide components
 const ICON_MAP = {
-  Code2, Server, Brain, Palette, Cpu, BarChart2, Smartphone, Shield,
-  Music, Dumbbell, Globe, Briefcase, Mic2, Camera, TrendingUp, Video,
-  ChefHat, BookOpen, Users, Layers, Flame
+  Code2,
+  Server,
+  Brain,
+  Palette,
+  Cpu,
+  BarChart2,
+  Smartphone,
+  Shield,
+  Music,
+  Dumbbell,
+  Globe,
+  Briefcase,
+  Mic2,
+  Camera,
+  TrendingUp,
+  Video,
+  ChefHat,
+  BookOpen,
+  Users,
+  Layers,
+  Flame,
 };
 const resolveIcon = (name) => ICON_MAP[name] || Layers;
 
-// Static Nav sections (top + personal)
 const navSections = [
   {
+    title: "Core",
     items: [
-      { icon: Home,          label: 'Home',      path: '/' },
-      { icon: Search,        label: 'Skill Hunt', path: '/skill-hunt' },
-      { icon: Repeat,        label: 'Barters',    path: '/barters' },
-      { icon: MessageSquare, label: 'SkillChat',  path: '/skill-chat' },
+      { icon: Home, label: "Home", path: "/" },
+      { icon: Search, label: "Skill Hunt", path: "/skill-hunt" },
+      { icon: Repeat, label: "Barters", path: "/barters" },
+      { icon: MessageSquare, label: "SkillChat", path: "/skill-chat" },
     ],
   },
   {
-    title: 'You',
+    title: "Workspace",
     collapsible: true,
     items: [
-      { icon: History,    label: 'History',       path: '/history' },
-      { icon: BookOpen,   label: 'My Courses',    path: '/my-courses' },
-      { icon: Heart,      label: 'Favorites',     path: '/favorites' },
-      { icon: Trophy,     label: 'Achievements',  path: '/achievements' },
-      { icon: ListVideo,  label: 'Playlists',     path: '/playlists' },
-      { icon: Video,      label: 'Videos',        path: '/videos' },
-      { icon: Clock,      label: 'Watch Later',   path: '/watch-later' },
-      { icon: ThumbsUp,   label: 'Liked Content', path: '/liked' },
+      { icon: History, label: "History", path: "/history" },
+      { icon: BookOpen, label: "My Courses", path: "/my-courses" },
+      { icon: Heart, label: "Favorites", path: "/favorites" },
+      { icon: Trophy, label: "Achievements", path: "/achievements" },
+      { icon: ListVideo, label: "Playlists", path: "/playlists" },
+      { icon: Video, label: "Videos", path: "/videos" },
+      { icon: Clock, label: "Watch Later", path: "/watch-later" },
+      { icon: ThumbsUp, label: "Liked Content", path: "/liked" },
     ],
   },
 ];
@@ -61,11 +112,14 @@ const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Root Layout Stability Lock (Prevents Animation Flashing on Load)
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  const [expandedSections, setExpandedSections] = useState(['You', 'Recent Courses', 'Recent Swaps']);
+  const [expandedSections, setExpandedSections] = useState([
+    "Workspace",
+    "Recent Courses",
+    "Recent Swaps",
+  ]);
   const [exploreOpen, setExploreOpen] = useState(false);
 
   // Dynamic data
@@ -74,22 +128,21 @@ const Sidebar = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch sidebar data
   useEffect(() => {
     if (!user) return;
     const fetch = async () => {
       try {
         setLoading(true);
         const [coursesRes, chatsRes, catsRes] = await Promise.all([
-          api.get('/enrollments/recent?limit=3'),
-          api.get('/chat/conversations'),
-          api.get('/categories'),
+          api.get("/enrollments/recent?limit=3"),
+          api.get("/chat/conversations"),
+          api.get("/categories"),
         ]);
         setRecentCourses(coursesRes.data || []);
         setRecentSwaps(chatsRes.data?.slice(0, 3) || []);
         setCategories(catsRes.data || []);
       } catch (e) {
-        console.error('Sidebar fetch error:', e);
+        console.error("Sidebar fetch error:", e);
       } finally {
         setLoading(false);
       }
@@ -98,18 +151,22 @@ const Sidebar = () => {
   }, [user]);
 
   const toggleSection = (title) =>
-    setExpandedSections(prev =>
-      prev.includes(title) ? prev.filter(t => t !== title) : [...prev, title]
+    setExpandedSections((prev) =>
+      prev.includes(title) ? prev.filter((t) => t !== title) : [...prev, title]
     );
 
   const isActive = (path) => {
-    if (path === '/') return location.pathname === '/';
+    if (path === "/") return location.pathname === "/";
     return location.pathname.startsWith(path);
   };
 
-  const discoverActive = ['/trending', '/live-sessions', '/my-swaps', '/communities', '/skill-hunt'].some(p =>
-    location.pathname.startsWith(p)
-  );
+  const discoverActive = [
+    "/trending",
+    "/live-sessions",
+    "/my-swaps",
+    "/communities",
+    "/skill-hunt",
+  ].some((p) => location.pathname.startsWith(p));
 
   const handleCategoryNav = (catName) => {
     setSidebarOpen(false);
@@ -126,43 +183,49 @@ const Sidebar = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setSidebarOpen(false)}
-            className="fixed inset-0 z-40 bg-foreground/20 backdrop-blur-sm lg:hidden"
+            className="fixed inset-0 z-40 bg-foreground/40 lg:hidden"
           />
         )}
       </AnimatePresence>
 
-      {/* Sidebar */}
-      <aside className={cn(
-        'w-[260px] min-w-[260px] max-w-[260px] flex-shrink-0 z-40 h-full bg-sidebar border-r border-sidebar-border flex flex-col lg:static lg:translate-x-0',
-        mounted ? 'transition-transform duration-300' : '',
-        sidebarOpen ? 'fixed inset-y-0 left-0 translate-x-0 shadow-2xl' : 'fixed inset-y-0 left-0 -translate-x-full'
-      )}>
-        {/* Mobile Close */}
+      {/* Sidebar Container */}
+      <aside
+        className={cn(
+          "w-[240px] min-w-[240px] max-w-[240px] flex-shrink-0 z-40 h-full bg-card border-r border-border flex flex-col lg:static lg:translate-x-0",
+          mounted ? "transition-transform duration-300 ease-out motion-reduce:transition-none" : "",
+          sidebarOpen
+            ? "fixed inset-y-0 left-0 translate-x-0 shadow-lg"
+            : "fixed inset-y-0 left-0 -translate-x-full"
+        )}
+      >
+        {/* Mobile Close Button */}
         <button
           onClick={() => setSidebarOpen(false)}
-          className="absolute p-1 rounded-lg top-4 right-4 hover:bg-muted lg:hidden"
+          className="absolute p-1.5 rounded-lg top-4 right-4 text-muted-foreground hover:bg-muted hover:text-foreground active:translate-y-px disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-primary lg:hidden"
+          aria-label="Close sidebar"
         >
-          <X className="w-5 h-5 text-muted-foreground" />
+          <X className="w-5 h-5" />
         </button>
 
-        <nav className="h-full py-4 overflow-y-auto scrollbar-thin">
-
-          {/* Static sections */}
+        <nav className="h-full py-4 overflow-y-auto scrollbar-thin px-2 space-y-4">
+          {/* Static Core & Workspace Sections */}
           {navSections.map((section, si) => (
-            <div key={si} className="mb-4">
+            <div key={si} className="space-y-1">
               {section.title && (
-                <div className="flex items-center justify-between px-4 py-2">
+                <div className="flex items-center justify-between px-3 py-1">
                   <button
                     onClick={() => section.collapsible && toggleSection(section.title)}
-                    className="flex items-center gap-1 text-xs font-semibold tracking-wider uppercase transition-colors text-muted-foreground hover:text-foreground"
+                    className="flex items-center gap-1 text-xs font-semibold transition-colors text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-primary"
                   >
                     {section.title}
                     {section.collapsible && (
                       <motion.span
-                        animate={{ rotate: expandedSections.includes(section.title) ? 0 : -90 }}
-                        transition={{ duration: 0.2 }}
+                        animate={{
+                          rotate: expandedSections.includes(section.title) ? 0 : -90,
+                        }}
+                        transition={{ duration: 0.15 }}
                       >
-                        <ChevronDown className="w-4 h-4" />
+                        <ChevronDown className="w-3.5 h-3.5" />
                       </motion.span>
                     )}
                   </button>
@@ -170,317 +233,333 @@ const Sidebar = () => {
               )}
 
               <AnimatePresence initial={false}>
-                {(!section.collapsible || !section.title || expandedSections.includes(section.title)) && (
+                {(!section.collapsible ||
+                  !section.title ||
+                  expandedSections.includes(section.title)) && (
                   <motion.div
                     initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
+                    animate={{ height: "auto", opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="overflow-hidden"
+                    transition={{ duration: 0.15 }}
+                    className="overflow-hidden space-y-0.5"
                   >
-                    <ul className="space-y-0.5 px-2">
-                      {section.items.map(item => (
-                        <li key={item.path}>
-                          <NavLink
-                            to={item.path}
-                            onClick={() => setSidebarOpen(false)}
+                    {section.items.map((item) => {
+                      const active = isActive(item.path);
+                      return (
+                        <NavLink
+                          key={item.path}
+                          to={item.path}
+                          onClick={() => setSidebarOpen(false)}
+                          className={cn(
+                            "relative flex items-center gap-3 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-primary",
+                            active
+                              ? "bg-primary/10 text-primary font-semibold shadow-xs"
+                              : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                          )}
+                        >
+                          {/* Active left accent bar */}
+                          {active && (
+                            <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-primary" />
+                          )}
+                          <item.icon
                             className={cn(
-                              'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
-                              isActive(item.path)
-                                ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm'
-                                : 'text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
+                              "h-4 w-4 flex-shrink-0 transition-colors",
+                              active ? "text-primary" : "text-muted-foreground"
                             )}
-                          >
-                            <item.icon className={cn('h-5 w-5 flex-shrink-0', isActive(item.path) ? 'text-primary' : '')} />
-                            <span className="flex-1">{item.label}</span>
-                            {isActive(item.path) && (
-                              <motion.div layoutId="activeIndicator" className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />
-                            )}
-                          </NavLink>
-                        </li>
-                      ))}
-                    </ul>
+                          />
+                          <span className="truncate">{item.label}</span>
+                        </NavLink>
+                      );
+                    })}
                   </motion.div>
                 )}
               </AnimatePresence>
 
-              <div className="mx-4 my-3 border-t border-sidebar-border" />
+              <div className="mx-2 my-2 border-t border-border/60" />
             </div>
           ))}
 
-          {/* ============================================
-              DISCOVER SECTION with Explore Dropdown
-          ============================================ */}
-          <div className="mb-4">
-            <div className="px-4 py-2">
-              <span className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">Discover</span>
+          {/* ── DISCOVER SECTION ───────────────────────────────────────── */}
+          <div className="space-y-1">
+            <div className="px-3 py-1">
+              <span className="text-xs font-semibold text-muted-foreground">
+                Discover
+              </span>
             </div>
-            <ul className="space-y-0.5 px-2">
 
-              {/* Explore — Dropdown */}
-              <li>
-                <button
-                  onClick={() => setExploreOpen(o => !o)}
-                  className={cn(
-                    'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
-                    (exploreOpen || discoverActive)
-                      ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm'
-                      : 'text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
-                  )}
+            <button
+              onClick={() => setExploreOpen((o) => !o)}
+              className={cn(
+                "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-primary",
+                exploreOpen || discoverActive
+                  ? "bg-primary/10 text-primary font-semibold"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              )}
+            >
+              <Compass className="h-4 w-4 flex-shrink-0 text-primary" />
+              <span className="flex-1 text-left">Explore Network</span>
+              <motion.span
+                animate={{ rotate: exploreOpen ? 180 : 0 }}
+                transition={{ duration: 0.15 }}
+              >
+                <ChevronDown className="w-3.5 h-3.5" />
+              </motion.span>
+            </button>
+
+            <AnimatePresence initial={false}>
+              {exploreOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                  className="overflow-hidden pl-3 border-l-2 border-primary/20 ml-4 space-y-0.5 mt-1"
                 >
-                  <Compass className="h-5 w-5 flex-shrink-0 text-primary" />
-                  <span className="flex-1 text-left">Explore</span>
-                  <motion.span animate={{ rotate: exploreOpen ? 180 : 0 }} transition={{ duration: 0.25 }}>
-                    <ChevronDown className="w-4 h-4" />
-                  </motion.span>
-                </button>
+                  <NavLink
+                    to="/skill-hunt"
+                    onClick={() => setSidebarOpen(false)}
+                    className={cn(
+                      "flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs transition-colors",
+                      isActive("/skill-hunt")
+                        ? "text-primary font-semibold bg-primary/10"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                    )}
+                  >
+                    <Search className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                    Skill Hunt
+                  </NavLink>
 
-                <AnimatePresence initial={false}>
-                  {exploreOpen && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.25, ease: 'easeInOut' }}
-                      className="overflow-hidden"
-                    >
-                      <ul className="mt-1 ml-4 space-y-0.5 border-l-2 border-primary/20 pl-3">
+                  <NavLink
+                    to="/live-sessions"
+                    onClick={() => setSidebarOpen(false)}
+                    className={cn(
+                      "flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs transition-colors",
+                      isActive("/live-sessions")
+                        ? "text-primary font-semibold bg-primary/10"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                    )}
+                  >
+                    <Radio className="h-3.5 w-3.5 text-destructive flex-shrink-0" />
+                    Live Sessions
+                  </NavLink>
 
-                        {/* Skill Hunt */}
-                        <li>
-                          <NavLink to="/skill-hunt" onClick={() => setSidebarOpen(false)}
-                            className={cn(
-                              'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-200',
-                              isActive('/skill-hunt') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : 'text-sidebar-foreground hover:bg-sidebar-accent/40'
-                            )}>
-                            <Search className="h-4 w-4 text-blue-500 flex-shrink-0" />
-                            Skill Hunt
-                          </NavLink>
-                        </li>
+                  <NavLink
+                    to="/trending"
+                    onClick={() => setSidebarOpen(false)}
+                    className={cn(
+                      "flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs transition-colors",
+                      isActive("/trending")
+                        ? "text-primary font-semibold bg-primary/10"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                    )}
+                  >
+                    <TrendingUp className="h-3.5 w-3.5 text-amber-600 flex-shrink-0" />
+                    Trending Skills
+                  </NavLink>
 
-                        {/* Live Sessions */}
-                        <li>
-                          <NavLink to="/live-sessions" onClick={() => setSidebarOpen(false)}
-                            className={cn(
-                              'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-200',
-                              isActive('/live-sessions') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : 'text-sidebar-foreground hover:bg-sidebar-accent/40'
-                            )}>
-                            <Radio className="h-4 w-4 text-red-500 flex-shrink-0" />
-                            Live Sessions
-                          </NavLink>
-                        </li>
+                  <NavLink
+                    to="/my-swaps"
+                    onClick={() => setSidebarOpen(false)}
+                    className={cn(
+                      "flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs transition-colors",
+                      isActive("/my-swaps")
+                        ? "text-primary font-semibold bg-primary/10"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                    )}
+                  >
+                    <ArrowLeftRight className="h-3.5 w-3.5 text-teach flex-shrink-0" />
+                    My Swaps
+                  </NavLink>
 
-                        {/* Trending */}
-                        <li>
-                          <NavLink to="/trending" onClick={() => setSidebarOpen(false)}
-                            className={cn(
-                              'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-200',
-                              isActive('/trending') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : 'text-sidebar-foreground hover:bg-sidebar-accent/40'
-                            )}>
-                            <TrendingUp className="h-4 w-4 text-amber-500 flex-shrink-0" />
-                            Trending Skills
-                          </NavLink>
-                        </li>
+                  <NavLink
+                    to="/communities"
+                    onClick={() => setSidebarOpen(false)}
+                    className={cn(
+                      "flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs transition-colors",
+                      isActive("/communities")
+                        ? "text-primary font-semibold bg-primary/10"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                    )}
+                  >
+                    <Globe className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                    Communities
+                  </NavLink>
 
-                        {/* My Swaps */}
-                        <li>
-                          <NavLink to="/my-swaps" onClick={() => setSidebarOpen(false)}
-                            className={cn(
-                              'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-200',
-                              isActive('/my-swaps') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : 'text-sidebar-foreground hover:bg-sidebar-accent/40'
-                            )}>
-                            <ArrowLeftRight className="h-4 w-4 text-green-500 flex-shrink-0" />
-                            My Swaps
-                          </NavLink>
-                        </li>
-
-                        {/* Communities */}
-                        <li>
-                          <NavLink to="/communities" onClick={() => setSidebarOpen(false)}
-                            className={cn(
-                              'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-200',
-                              isActive('/communities') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : 'text-sidebar-foreground hover:bg-sidebar-accent/40'
-                            )}>
-                            <Globe className="h-4 w-4 text-violet-500 flex-shrink-0" />
-                            Communities
-                          </NavLink>
-                        </li>
-
-                        {/* ── Dynamic Categories from DB ── */}
-                        {categories.length > 0 && (
-                          <>
-                            <li>
-                              <div className="pt-2 pb-1 px-3">
-                                <span className="text-[10px] font-bold tracking-wider uppercase text-muted-foreground">
-                                  Categories
-                                </span>
-                              </div>
-                            </li>
-                            {categories.map((cat) => {
-                              const IconComp = resolveIcon(cat.icon);
-                              return (
-                                <li key={cat._id || cat.name}>
-                                  <button
-                                    onClick={() => handleCategoryNav(cat.name)}
-                                    className="w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-sm text-sidebar-foreground hover:bg-sidebar-accent/40 hover:text-sidebar-accent-foreground transition-all duration-200"
-                                  >
-                                    <IconComp className="h-4 w-4 flex-shrink-0" style={{ color: cat.color || '#6366f1' }} />
-                                    {cat.name}
-                                  </button>
-                                </li>
-                              );
-                            })}
-                          </>
-                        )}
-                      </ul>
-                    </motion.div>
+                  {/* Dynamic Categories */}
+                  {categories.length > 0 && (
+                    <>
+                      <div className="pt-2 pb-1 px-2.5 text-xs font-semibold text-muted-foreground">
+                        Categories
+                      </div>
+                      {categories.map((cat) => {
+                        const IconComp = resolveIcon(cat.icon);
+                        return (
+                          <button
+                            key={cat._id || cat.name}
+                            onClick={() => handleCategoryNav(cat.name)}
+                            className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors focus-visible:outline-2 focus-visible:outline-primary"
+                          >
+                            <IconComp
+                              className="h-3.5 w-3.5 flex-shrink-0 text-primary"
+                            />
+                            <span className="truncate">{cat.name}</span>
+                          </button>
+                        );
+                      })}
+                    </>
                   )}
-                </AnimatePresence>
-              </li>
-            </ul>
-            <div className="mx-4 my-3 border-t border-sidebar-border" />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <div className="mx-2 my-2 border-t border-border/60" />
           </div>
 
-          {/* Dynamic: Recent Courses */}
+          {/* ── RECENT COURSES ─────────────────────────────────────────── */}
           {recentCourses.length > 0 && (
-            <div className="mb-4">
-              <div className="flex items-center justify-between px-4 py-2">
-                <button onClick={() => toggleSection('Recent Courses')}
-                  className="flex items-center gap-1 text-xs font-semibold tracking-wider uppercase transition-colors text-muted-foreground hover:text-foreground"
+            <div className="space-y-1">
+              <div className="flex items-center justify-between px-3 py-1">
+                <button
+                  onClick={() => toggleSection("Recent Courses")}
+                  className="flex items-center gap-1 text-xs font-semibold transition-colors text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-primary"
                 >
-                  Recent Courses
-                  <motion.span animate={{ rotate: expandedSections.includes('Recent Courses') ? 0 : -90 }} transition={{ duration: 0.2 }}>
-                    <ChevronDown className="w-4 h-4" />
+                  Recent courses
+                  <motion.span
+                    animate={{
+                      rotate: expandedSections.includes("Recent Courses") ? 0 : -90,
+                    }}
+                    transition={{ duration: 0.15 }}
+                  >
+                    <ChevronDown className="w-3.5 h-3.5" />
                   </motion.span>
                 </button>
-                <NavLink to="/my-courses" className="text-xs font-medium text-primary hover:underline">View all</NavLink>
+                <NavLink
+                  to="/my-courses"
+                  className="text-[11px] font-semibold text-primary hover:underline"
+                >
+                  All
+                </NavLink>
               </div>
 
               <AnimatePresence initial={false}>
-                {expandedSections.includes('Recent Courses') && (
-                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                    <ul className="space-y-0.5 px-2">
-                      {recentCourses.map(course => (
-                        <li key={course._id}>
-                          <NavLink to={`/courses/${course._id}`} onClick={() => setSidebarOpen(false)}
-                            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 text-sidebar-foreground hover:bg-sidebar-accent/50"
-                          >
-                            <BookOpen className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                            <div className="flex flex-col flex-1 min-w-0">
-                              <span className="truncate">{course.title}</span>
-                              {typeof course.progress === 'number' && (
-                                <div className="w-full h-1 mt-1 rounded-full bg-muted">
-                                  <div className="h-1 rounded-full bg-primary" style={{ width: `${course.progress}%` }} />
-                                </div>
-                              )}
+                {expandedSections.includes("Recent Courses") && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.15 }}
+                    className="overflow-hidden space-y-0.5"
+                  >
+                    {recentCourses.map((course) => (
+                      <NavLink
+                        key={course._id}
+                        to={`/courses/${course._id}`}
+                        onClick={() => setSidebarOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors text-muted-foreground hover:text-foreground hover:bg-muted/50 focus-visible:outline-2 focus-visible:outline-primary"
+                      >
+                        <BookOpen className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />
+                        <div className="flex flex-col flex-1 min-w-0">
+                          <span className="truncate">{course.title}</span>
+                          {typeof course.progress === "number" && (
+                            <div className="w-full h-1 mt-1 rounded-full bg-muted">
+                              <div
+                                className="h-1 rounded-full bg-primary"
+                                style={{ width: `${course.progress}%` }}
+                              />
                             </div>
-                          </NavLink>
-                        </li>
-                      ))}
-                    </ul>
+                          )}
+                        </div>
+                      </NavLink>
+                    ))}
                   </motion.div>
                 )}
               </AnimatePresence>
-              <div className="mx-4 my-3 border-t border-sidebar-border" />
+
+              <div className="mx-2 my-2 border-t border-border/60" />
             </div>
           )}
 
-          {/* Dynamic: Recent Swaps / Chats */}
+          {/* ── RECENT SWAPS ───────────────────────────────────────────── */}
           {recentSwaps.length > 0 && (
-            <div className="mb-4">
-              <div className="flex items-center justify-between px-4 py-2">
-                <button onClick={() => toggleSection('Recent Swaps')}
-                  className="flex items-center gap-1 text-xs font-semibold tracking-wider uppercase transition-colors text-muted-foreground hover:text-foreground"
+            <div className="space-y-1">
+              <div className="flex items-center justify-between px-3 py-1">
+                <button
+                  onClick={() => toggleSection("Recent Swaps")}
+                  className="flex items-center gap-1 text-xs font-semibold transition-colors text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-primary"
                 >
-                  Recent Swaps
-                  <motion.span animate={{ rotate: expandedSections.includes('Recent Swaps') ? 0 : -90 }} transition={{ duration: 0.2 }}>
-                    <ChevronDown className="w-4 h-4" />
+                  Recent swaps
+                  <motion.span
+                    animate={{
+                      rotate: expandedSections.includes("Recent Swaps") ? 0 : -90,
+                    }}
+                    transition={{ duration: 0.15 }}
+                  >
+                    <ChevronDown className="w-3.5 h-3.5" />
                   </motion.span>
                 </button>
-                <NavLink to="/barters" className="text-xs font-medium text-primary hover:underline">Find more</NavLink>
+                <NavLink
+                  to="/barters"
+                  className="text-xs font-semibold text-primary hover:underline focus-visible:outline-2 focus-visible:outline-primary"
+                >
+                  Find
+                </NavLink>
               </div>
 
               <AnimatePresence initial={false}>
-                {expandedSections.includes('Recent Swaps') && (
-                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                    <ul className="space-y-0.5 px-2">
-                      {recentSwaps.map(chat => (
-                        <li key={chat.user._id}>
-                          <NavLink
-                            to="/skill-chat"
-                            state={{ selectedUserId: chat.user._id, selectedUserData: chat.user }}
-                            onClick={() => setSidebarOpen(false)}
-                            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 text-sidebar-foreground hover:bg-sidebar-accent/50"
-                          >
-                            <img src={getAvatarUrl(chat.user)} alt={chat.user.name} className="w-6 h-6 rounded-full object-cover shrink-0" />
-                            <div className="flex flex-col flex-1 min-w-0">
-                              <span className="truncate">{chat.user.name}</span>
-                              <span className="text-[10px] text-muted-foreground truncate">{chat.lastMessage?.text || 'Attachment'}</span>
-                            </div>
-                          </NavLink>
-                        </li>
-                      ))}
-                    </ul>
+                {expandedSections.includes("Recent Swaps") && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.15 }}
+                    className="overflow-hidden space-y-0.5"
+                  >
+                    {recentSwaps.map((chat) => (
+                      <NavLink
+                        key={chat.user._id}
+                        to="/skill-chat"
+                        state={{
+                          selectedUserId: chat.user._id,
+                          selectedUserData: chat.user,
+                        }}
+                        onClick={() => setSidebarOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors text-muted-foreground hover:text-foreground hover:bg-muted/50 focus-visible:outline-2 focus-visible:outline-primary"
+                      >
+                        <img
+                          src={getAvatarUrl(chat.user)}
+                          alt={chat.user.name}
+                          className="w-5 h-5 rounded-full object-cover shrink-0"
+                        />
+                        <div className="flex flex-col flex-1 min-w-0">
+                          <span className="truncate">{chat.user.name}</span>
+                          <span className="text-[10px] text-muted-foreground truncate">
+                            {chat.lastMessage?.text || "Attachment"}
+                          </span>
+                        </div>
+                      </NavLink>
+                    ))}
                   </motion.div>
                 )}
               </AnimatePresence>
-              <div className="mx-4 my-3 border-t border-sidebar-border" />
+
+              <div className="mx-2 my-2 border-t border-border/60" />
             </div>
           )}
 
-          {/* Quick Actions */}
-          <div className="mb-4">
-            <div className="px-4 py-2">
-              <span className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">Quick Actions</span>
-            </div>
-            <ul className="space-y-0.5 px-2">
-              <li>
-                <NavLink to="/start-learning" onClick={() => setSidebarOpen(false)}
-                  className={cn(
-                    'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
-                    isActive('/start-learning') ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm' : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
-                  )}>
-                  <Play className="h-5 w-5 text-green-500" /> Start Learning
-                </NavLink>
-              </li>
-              <li>
-                <NavLink to="/my-swaps" onClick={() => setSidebarOpen(false)}
-                  className={cn(
-                    'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
-                    isActive('/my-swaps') ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm' : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
-                  )}>
-                  <ArrowLeftRight className="h-5 w-5 text-primary" /> My Skill Swaps
-                </NavLink>
-              </li>
-              <li>
-                <NavLink to="/studio/upload" onClick={() => setSidebarOpen(false)}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 text-sidebar-foreground hover:bg-sidebar-accent/50"
-                >
-                  <PlusCircle className="h-5 w-5 text-primary" /> Create New Course
-                </NavLink>
-              </li>
-            </ul>
-            <div className="mx-4 my-3 border-t border-sidebar-border" />
+          {/* Quick Help Link */}
+          <div className="px-2 pt-2">
+            <NavLink
+              to="/support"
+              onClick={() => setSidebarOpen(false)}
+              className={cn(
+                "flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors text-muted-foreground hover:text-foreground hover:bg-muted/50 focus-visible:outline-2 focus-visible:outline-primary",
+                isActive("/support") ? "bg-primary/10 text-primary font-bold" : ""
+              )}
+            >
+              <HelpCircle className="h-4 w-4" />
+              <span>Help & Support</span>
+            </NavLink>
           </div>
-
-          {/* Help */}
-          <div className="mb-4">
-            <div className="px-4 py-2">
-              <span className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">Help</span>
-            </div>
-            <ul className="space-y-0.5 px-2">
-              <li>
-                <NavLink to="/support" onClick={() => setSidebarOpen(false)}
-                  className={cn(
-                    'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
-                    isActive('/support') ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm' : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
-                  )}>
-                  <HelpCircle className="h-5 w-5" /> Help & Support
-                </NavLink>
-              </li>
-            </ul>
-          </div>
-
         </nav>
       </aside>
     </>

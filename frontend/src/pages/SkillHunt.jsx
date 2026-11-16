@@ -21,18 +21,18 @@ const fadeUp = {
 const PopularityBadge = ({ views, enrolledCount }) => {
   const score = (views || 0) + (enrolledCount || 0) * 5;
   if (score > 100) return (
-    <span className="flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">
-      <Flame className="w-3 h-3" /> Popular
+    <span className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-orange-500/10 text-orange-700 dark:text-orange-300 border border-orange-500/20">
+      <Flame className="w-3 h-3 text-orange-500" /> Popular
     </span>
   );
   if (score > 30) return (
-    <span className="flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
-      <TrendingUp className="w-3 h-3" /> Trending
+    <span className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20">
+      <TrendingUp className="w-3 h-3 text-blue-500" /> Trending
     </span>
   );
   if (enrolledCount > 0) return (
-    <span className="flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-violet-100 text-violet-700">
-      <Star className="w-3 h-3" /> In Demand
+    <span className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-violet-500/10 text-violet-700 dark:text-violet-300 border border-violet-500/20">
+      <Star className="w-3 h-3 text-violet-500" /> In Demand
     </span>
   );
   return null;
@@ -142,8 +142,8 @@ const SkillHunt = () => {
             <div className="mb-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <Flame className="w-5 h-5 text-orange-500" />
-                  <h2 className="text-lg font-heading font-bold text-foreground">🔥 Most Popular Skills</h2>
+                  <Flame className="w-5 h-5 text-learn" />
+                  <h2 className="text-lg font-heading font-bold text-foreground">Most Popular Skills</h2>
                 </div>
                 <Link
                   to="/trending"
@@ -162,16 +162,16 @@ const SkillHunt = () => {
                     custom={i}
                   >
                     <Link to={`/course/${course._id}`} className="block group">
-                      <div className="rounded-2xl overflow-hidden border border-border/60 bg-card shadow-card hover:shadow-card-hover transition-all duration-300 hover:-translate-y-1">
+                      <div className="rounded-xl overflow-hidden border border-border bg-card shadow-xs hover:border-primary/40 transition-colors">
                         {course.thumbnail ? (
                           <img
                             src={course.thumbnail}
                             alt={course.title}
-                            className="w-full h-28 object-cover group-hover:scale-105 transition-transform duration-300"
+                            className="w-full h-28 object-cover"
                           />
                         ) : (
-                          <div className="w-full h-28 gradient-primary flex items-center justify-center">
-                            <TrendingUp className="w-8 h-8 text-white/40" />
+                          <div className="w-full h-28 bg-muted flex items-center justify-center">
+                            <TrendingUp className="w-8 h-8 text-muted-foreground" />
                           </div>
                         )}
                         <div className="p-3">
@@ -179,7 +179,7 @@ const SkillHunt = () => {
                             <h3 className="font-semibold text-xs text-foreground line-clamp-2 flex-1">{course.title}</h3>
                             <PopularityBadge views={course.views} enrolledCount={course.enrolledCount} />
                           </div>
-                          <p className="text-[10px] text-muted-foreground">
+                          <p className="text-xs text-muted-foreground">
                             {course.views || 0} views · {course.enrolledCount || 0} enrolled
                           </p>
                         </div>
@@ -195,7 +195,7 @@ const SkillHunt = () => {
           {trendingSkills.length > 0 && (
             <div className="mb-2">
               <div className="flex items-center gap-2 mb-3">
-                <Zap className="w-5 h-5 text-amber-500" />
+                <Zap className="w-5 h-5 text-learn" />
                 <h2 className="text-base font-heading font-bold text-foreground">High Demand Swap Skills</h2>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -207,9 +207,9 @@ const SkillHunt = () => {
                     animate="visible"
                     custom={i}
                     onClick={() => setSearchQuery(s.skill)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-card border border-border hover:border-primary/50 hover:bg-primary/5 text-sm font-medium text-foreground shadow-card transition-all"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-card border border-border hover:border-primary/50 text-sm font-medium text-foreground shadow-xs transition-colors active:translate-y-px"
                   >
-                    {i < 3 && <Flame className="w-3.5 h-3.5 text-orange-400" />}
+                    {i < 3 && <Flame className="w-3.5 h-3.5 text-learn" />}
                     {s.skill}
                     <span className="text-xs text-muted-foreground">×{s.swapCount}</span>
                   </motion.button>
@@ -222,10 +222,10 @@ const SkillHunt = () => {
 
       {/* Search and Filter Bar */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="p-4 mb-6 border bg-card rounded-2xl border-border"
+        className="p-4 mb-6 border bg-card rounded-xl border-border shadow-xs"
       >
         <div className="flex flex-col gap-4 lg:flex-row">
           {/* Search */}
@@ -237,7 +237,7 @@ const SkillHunt = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search skills, courses, instructors..."
-                className="w-full h-12 pl-12 pr-4 transition-all border outline-none bg-muted/50 border-border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                className="w-full h-12 pl-12 pr-4 transition-colors border outline-none bg-muted/40 border-border rounded-lg focus-visible:outline-2 focus-visible:outline-primary"
               />
             </div>
           </form>
@@ -372,7 +372,7 @@ const SkillHunt = () => {
       {/* Course Grid */}
       {loading ? (
         <div className="flex justify-center py-20">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <Loader2 className="w-8 h-8 animate-spin motion-reduce:animate-none text-primary" />
         </div>
       ) : courses.length === 0 ? (
         <div className="py-16 text-center">

@@ -5,8 +5,9 @@ import RatingStars from "./RatingStars";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
-const avatarFallback = (name) =>
-  `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'I')}&background=6366f1&color=fff&size=32`;
+import { getHallmarkAvatar } from "@/lib/avatar";
+
+const avatarFallback = (name) => getHallmarkAvatar(name || 'I');
 
 const formatCount = (n) => {
   if (!n || n === 0) return null;
@@ -66,10 +67,10 @@ const CourseCard = ({ course, variant = "default", className }) => {
     return (
       <Link to={`/course/${course._id || course.id}`} className="block h-full">
         <motion.div
-          whileHover={{ scale: 1.03, y: -4 }}
+          whileHover={{ scale: 1.02, y: -4 }}
           whileTap={{ scale: 0.98 }}
           className={cn(
-            "group relative h-full flex flex-col bg-card rounded-xl overflow-hidden shadow-card hover:shadow-card-hover transition-all duration-300",
+            "group relative h-full flex flex-col bg-card rounded-2xl border border-border/80 overflow-hidden shadow-card hover:shadow-card-hover transition-all duration-300",
             className
           )}
         >
@@ -163,7 +164,7 @@ const CourseCard = ({ course, variant = "default", className }) => {
       <motion.div
         whileHover={{ y: -4 }}
         className={cn(
-          "group bg-card rounded-2xl shadow-card hover:shadow-card-hover transition-all duration-300 overflow-hidden",
+          "group bg-card rounded-2xl border border-border/80 shadow-card hover:shadow-card-hover transition-all duration-300 overflow-hidden",
           className
         )}
       >

@@ -7,24 +7,18 @@ import { Plus, Upload, Radio, FileEdit, ListPlus, GraduationCap } from "lucide-r
 import { useAuth } from "@/context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 
+import { resolveAvatarUrl, getHallmarkAvatar } from "@/lib/avatar";
+
 const StudioLayout = () => {  // Remove children prop
   const { user } = useAuth();
   const [showCreateMenu, setShowCreateMenu] = useState(false);
   const menuRef = useRef(null);
 
   // Helper function to generate a default avatar
-  const getDefaultAvatar = (name) => {
-    if (!name) return "https://ui-avatars.com/api/?name=User&background=6366f1&color=fff&size=200&bold=true";
-    const encodedName = encodeURIComponent(name);
-    return `https://ui-avatars.com/api/?name=${encodedName}&background=6366f1&color=fff&size=200&bold=true`;
-  };
+  const getDefaultAvatar = (name) => getHallmarkAvatar(name || "User");
 
   // Helper function to get proper avatar URL
-  const getAvatarUrl = (avatarPath) => {
-    if (!avatarPath) return getDefaultAvatar(user?.name);
-    if (avatarPath.startsWith("http")) return avatarPath; // Google OAuth, Supabase, etc.
-    return getDefaultAvatar(user?.name);
-  };
+  const getAvatarUrl = (avatarPath) => resolveAvatarUrl(avatarPath, user?.name);
 
   // Close menu when clicking outside
   useEffect(() => {

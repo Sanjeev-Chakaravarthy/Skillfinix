@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import api from "@/api/axios";
+import { resolveAvatarUrl } from "@/lib/avatar";
 
 const SearchBar = ({
   placeholder = "Search courses, skills, users...",
@@ -111,11 +112,13 @@ const SearchBar = ({
       <form onSubmit={handleSubmit}>
         <div
           className={cn(
-            "relative flex items-center bg-muted/50 border border-border rounded-xl transition-all duration-200",
-            isFocused && "bg-card border-primary/50 shadow-md ring-2 ring-primary/10"
+            "relative flex items-center bg-card/70 backdrop-blur-md border border-border/80 rounded-2xl transition-all duration-200",
+            isFocused
+              ? "bg-card border-primary shadow-sm ring-2 ring-primary/20"
+              : "hover:border-border hover:bg-card/90"
           )}
         >
-          <Search className="absolute left-4 h-5 w-5 text-muted-foreground" />
+          <Search className="absolute left-4 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
 
           <input
             ref={inputRef}
@@ -124,19 +127,23 @@ const SearchBar = ({
             onChange={(e) => setLocalQuery(e.target.value)}
             onFocus={() => setIsFocused(true)}
             placeholder={placeholder}
-            className="w-full h-11 pl-12 pr-20 bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none"
+            className="w-full h-11 pl-11 pr-24 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
           />
 
-          <div className="absolute right-2 flex items-center gap-1">
-            {searching && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-            {localQuery && (
+          <div className="absolute right-2.5 flex items-center gap-1.5">
+            {searching && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
+            {localQuery ? (
               <button
                 type="button"
                 onClick={handleClear}
-                className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+                className="p-1 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
               >
-                <X className="h-4 w-4 text-muted-foreground" />
+                <X className="h-3.5 w-3.5" />
               </button>
+            ) : (
+              <span className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground bg-muted/60 border border-border/60 rounded-md">
+                ⌘K
+              </span>
             )}
           </div>
         </div>
@@ -150,7 +157,7 @@ const SearchBar = ({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.15 }}
-            className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-xl shadow-lg z-50 overflow-hidden max-h-[400px] overflow-y-auto"
+            className="absolute top-full left-0 right-0 mt-2 bg-card/95 backdrop-blur-xl border border-border/80 rounded-2xl shadow-xl z-50 overflow-hidden max-h-[400px] overflow-y-auto"
           >
             {/* Live Search Results */}
             {localQuery && hasResults && (
@@ -194,7 +201,7 @@ const SearchBar = ({
                             onClick={() => handleUserClick(u._id)}
                             className="w-full flex items-center gap-3 px-3 py-2 text-sm text-foreground hover:bg-muted rounded-lg transition-colors text-left"
                           >
-                            <img src={u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}`} alt="" className="w-8 h-8 rounded-full object-cover" />
+                            <img src={resolveAvatarUrl(u.avatar, u.name)} alt={u.name} className="w-8 h-8 rounded-full object-cover" />
                             <div className="flex-1 min-w-0">
                               <p className="truncate font-medium">{u.name}</p>
                               <p className="text-xs text-muted-foreground truncate">{(u.skills || []).slice(0, 3).join(', ')}</p>

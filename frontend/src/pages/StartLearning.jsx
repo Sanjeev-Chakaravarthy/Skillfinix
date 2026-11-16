@@ -9,13 +9,13 @@ import api from '@/api/axios';
 import { useAuth } from '@/context/AuthContext';
 
 const SkeletonCard = () => (
-  <div className="rounded-2xl bg-muted animate-pulse h-40" />
+  <div className="rounded-xl bg-muted animate-pulse motion-reduce:animate-none h-40" />
 );
 
 const ProgressBar = ({ value, className = '' }) => (
   <div className={`w-full h-2 rounded-full bg-muted overflow-hidden ${className}`}>
     <motion.div
-      className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500"
+      className="h-full rounded-full bg-primary"
       initial={{ width: 0 }}
       animate={{ width: `${Math.min(value, 100)}%` }}
       transition={{ duration: 0.8, ease: 'easeOut' }}
@@ -98,31 +98,28 @@ export default function StartLearning() {
             </span>
           </div>
           <h1 className="text-2xl md:text-4xl font-heading font-bold mb-2">
-            Welcome back, {user?.name?.split(' ')[0] || 'Learner'}! 👋
+            Welcome back, {user?.name?.split(' ')[0] || 'Learner'}
           </h1>
           <p className="text-white/80 max-w-lg mb-5 text-sm md:text-base">
-            You've enrolled in <strong>{enrolled.length}</strong> course{enrolled.length !== 1 ? 's' : ''}.
-            {completed.length > 0 && ` You've completed ${completed.length}. Keep it up!`}
-            {inProgress.length > 0 && !completed.length && ` ${inProgress.length} in progress — keep the streak alive!`}
+            You’ve enrolled in <strong>{enrolled.length}</strong> course{enrolled.length !== 1 ? 's' : ''}.
+            {completed.length > 0 && ` You’ve completed ${completed.length}. Keep it up!`}
+            {inProgress.length > 0 && !completed.length && ` ${inProgress.length} in progress.`}
           </p>
           <div className="flex flex-wrap gap-4">
-            <div className="rounded-2xl bg-white/15 backdrop-blur-sm px-5 py-3 text-center">
+            <div className="rounded-xl bg-white/10 px-5 py-3 text-center border border-white/15">
               <p className="text-2xl font-bold">{enrolled.length}</p>
               <p className="text-xs text-white/70 mt-0.5">Enrolled</p>
             </div>
-            <div className="rounded-2xl bg-white/15 backdrop-blur-sm px-5 py-3 text-center">
+            <div className="rounded-xl bg-white/10 px-5 py-3 text-center border border-white/15">
               <p className="text-2xl font-bold">{completed.length}</p>
               <p className="text-xs text-white/70 mt-0.5">Completed</p>
             </div>
-            <div className="rounded-2xl bg-white/15 backdrop-blur-sm px-5 py-3 text-center">
+            <div className="rounded-xl bg-white/10 px-5 py-3 text-center border border-white/15">
               <p className="text-2xl font-bold">{totalProgress}%</p>
               <p className="text-xs text-white/70 mt-0.5">Avg Progress</p>
             </div>
           </div>
         </div>
-        {/* Decorative blobs */}
-        <div className="absolute -right-10 -top-10 w-52 h-52 rounded-full bg-white/10 blur-3xl pointer-events-none" />
-        <div className="absolute -left-10 -bottom-10 w-44 h-44 rounded-full bg-violet-400/20 blur-3xl pointer-events-none" />
       </motion.div>
 
       {/* Overall Progress */}
@@ -166,12 +163,12 @@ export default function StartLearning() {
                   variants={fadeUp} initial="hidden" animate="visible" custom={i}
                 >
                   <Link to={`/course/${course._id}`} className="block group">
-                    <div className="rounded-2xl overflow-hidden border border-border/60 bg-card shadow-card hover:shadow-card-hover transition-all duration-300 hover:-translate-y-1 h-full">
+                    <div className="rounded-xl overflow-hidden border border-border bg-card shadow-xs hover:border-primary/40 transition-colors h-full">
                       {course.thumbnail ? (
-                        <img src={course.thumbnail} alt={course.title} className="w-full h-36 object-cover group-hover:scale-105 transition-transform duration-300" />
+                        <img src={course.thumbnail} alt={course.title} className="w-full h-36 object-cover" />
                       ) : (
-                        <div className="w-full h-36 gradient-primary flex items-center justify-center">
-                          <BookOpen className="w-10 h-10 text-white/50" />
+                        <div className="w-full h-36 bg-muted flex items-center justify-center">
+                          <BookOpen className="w-10 h-10 text-muted-foreground" />
                         </div>
                       )}
                       <div className="p-4">
@@ -203,13 +200,13 @@ export default function StartLearning() {
           <div className="flex flex-col gap-3">
             {loading
               ? Array(3).fill(0).map((_, i) => (
-                <div key={i} className="rounded-2xl bg-muted animate-pulse h-16" />
+                <div key={i} className="rounded-xl bg-muted animate-pulse motion-reduce:animate-none h-16" />
               ))
               : recentlyAccessed.map((course, i) => (
                 <motion.div key={course._id} variants={fadeUp} initial="hidden" animate="visible" custom={i}>
                   <Link
                     to={`/course/${course._id}`}
-                    className="flex items-center gap-4 rounded-2xl border border-border/60 bg-card px-4 py-3 shadow-card hover:shadow-card-hover transition-all duration-200 hover:-translate-y-0.5 group"
+                    className="flex items-center gap-4 rounded-xl border border-border bg-card px-4 py-3 shadow-xs hover:border-primary/40 transition-colors group"
                   >
                     {course.thumbnail ? (
                       <img src={course.thumbnail} alt={course.title} className="w-12 h-12 object-cover rounded-xl flex-shrink-0" />
@@ -249,13 +246,13 @@ export default function StartLearning() {
             {notStarted.slice(0, 3).map((course, i) => (
               <motion.div key={course._id} variants={fadeUp} initial="hidden" animate="visible" custom={i}>
                 <Link to={`/course/${course._id}`} className="block group">
-                  <div className="rounded-2xl border border-border/60 bg-card shadow-card hover:shadow-card-hover transition-all duration-300 hover:-translate-y-1 p-4">
+                  <div className="rounded-xl border border-border bg-card shadow-xs hover:border-primary/40 transition-colors p-4">
                     <div className="flex items-center gap-3 mb-3">
                       {course.thumbnail ? (
-                        <img src={course.thumbnail} alt={course.title} className="w-12 h-12 object-cover rounded-xl" />
+                        <img src={course.thumbnail} alt={course.title} className="w-12 h-12 object-cover rounded-lg" />
                       ) : (
-                        <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center">
-                          <Zap className="w-5 h-5 text-amber-500" />
+                        <div className="w-12 h-12 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                          <Zap className="w-5 h-5 text-amber-600" />
                         </div>
                       )}
                       <div className="min-w-0">
@@ -263,7 +260,7 @@ export default function StartLearning() {
                         <p className="text-xs text-muted-foreground">{course.instructor || 'Instructor'}</p>
                       </div>
                     </div>
-                    <span className="inline-block text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-700">
+                    <span className="inline-block text-xs font-medium px-2.5 py-1 rounded-md bg-amber-500/10 text-amber-600 border border-amber-500/20">
                       Not started
                     </span>
                   </div>
@@ -290,12 +287,12 @@ export default function StartLearning() {
             {recommended.map((course, i) => (
               <motion.div key={course._id} variants={fadeUp} initial="hidden" animate="visible" custom={i}>
                 <Link to={`/course/${course._id}`} className="block group">
-                  <div className="rounded-2xl overflow-hidden border border-border/60 bg-card shadow-card hover:shadow-card-hover transition-all duration-300 hover:-translate-y-1">
+                  <div className="rounded-xl overflow-hidden border border-border bg-card shadow-xs hover:border-primary/40 transition-colors">
                     {course.thumbnail ? (
-                      <img src={course.thumbnail} alt={course.title} className="w-full h-32 object-cover group-hover:scale-105 transition-transform duration-300" />
+                      <img src={course.thumbnail} alt={course.title} className="w-full h-32 object-cover" />
                     ) : (
-                      <div className="w-full h-32 gradient-primary flex items-center justify-center">
-                        <TrendingUp className="w-8 h-8 text-white/50" />
+                      <div className="w-full h-32 bg-muted flex items-center justify-center">
+                        <TrendingUp className="w-8 h-8 text-muted-foreground" />
                       </div>
                     )}
                     <div className="p-4">

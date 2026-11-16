@@ -5,6 +5,7 @@ import { CustomButton } from "./CustomButton";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 import api from "@/api/axios";
+import { resolveAvatarUrl } from "@/lib/avatar";
 
 const SkillOwnerCard = ({ course, onMessageClick }) => {
   const { user } = useAuth();
@@ -155,18 +156,10 @@ const SkillOwnerCard = ({ course, onMessageClick }) => {
           className="relative group block rounded-full overflow-hidden shrink-0 shadow-sm border border-border/60"
         >
           <img
-            src={
-              course.instructorAvatar ||
-              `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                course.instructor || "I"
-              )}&background=6366f1&color=fff&size=56`
-            }
+            src={resolveAvatarUrl(course.instructorAvatar, course.instructor)}
             alt={course.instructor}
-            className="w-14 h-14 object-cover group-hover:scale-110 transition-transform duration-300"
-            onError={(e) => {
-              e.target.onerror = null;
-              e.target.src = `https://ui-avatars.com/api/?name=I&background=6366f1&color=fff&size=56`;
-            }}
+            className="w-14 h-14 object-cover"
+            onError={(e) => { e.target.onerror = null; }}
           />
           <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity" />
         </Link>

@@ -53,12 +53,18 @@ const ProgressCard = ({ course, className }) => {
           </h4>
 
           <div className="flex items-center gap-2 mt-2">
-            <img
-              src={course.instructorAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(course.instructor || 'I')}&background=6366f1&color=fff&size=32`}
-              alt={course.instructor}
-              className="w-5 h-5 rounded-full object-cover"
-              onError={(e) => { e.target.onerror = null; e.target.src = `https://ui-avatars.com/api/?name=I&background=6366f1&color=fff&size=32`; }}
-            />
+            {course.instructorAvatar ? (
+              <img
+                src={course.instructorAvatar}
+                alt={course.instructor}
+                className="w-5 h-5 rounded-full object-cover"
+                onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; }}
+              />
+            ) : (
+              <div className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold">
+                {(course.instructor || 'I').charAt(0).toUpperCase()}
+              </div>
+            )}
             <span className="text-sm text-muted-foreground">
               {course.instructor}
             </span>

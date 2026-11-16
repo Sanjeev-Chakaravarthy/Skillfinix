@@ -13,26 +13,19 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSocket } from "@/context/SocketContext";
 
-const getDefaultAvatar = (name) =>
-  `https://ui-avatars.com/api/?name=${encodeURIComponent(name || "User")}&background=6366f1&color=fff&size=200&bold=true`;
+import { resolveAvatarUrl, getHallmarkAvatar } from "@/lib/avatar";
 
-const getAvatarUrl = (avatarPath, name) => {
-  if (!avatarPath) return getDefaultAvatar(name);
-  if (avatarPath.startsWith("http")) return avatarPath;
-  return getDefaultAvatar(name);
-};
-
-// Notification type → icon + color
+// Notification type → icon + color (Hallmark theme tokens)
 const notifMeta = (type) => {
   switch (type) {
     case "success":
-    case "course":      return { icon: BookOpen,       color: "text-green-500",  bg: "bg-green-500/10" };
-    case "barter":      return { icon: ArrowLeftRight, color: "text-blue-500",   bg: "bg-blue-500/10" };
-    case "achievement": return { icon: Trophy,          color: "text-yellow-500", bg: "bg-yellow-500/10" };
-    case "warning":     return { icon: AlertCircle,     color: "text-orange-500", bg: "bg-orange-500/10" };
-    case "error":       return { icon: AlertCircle,     color: "text-red-500",    bg: "bg-red-500/10" };
+    case "course":      return { icon: BookOpen,       color: "text-teach",       bg: "bg-teach/10" };
+    case "barter":      return { icon: ArrowLeftRight, color: "text-learn",       bg: "bg-learn/10" };
+    case "achievement": return { icon: Trophy,          color: "text-amber-600",   bg: "bg-amber-500/10" };
+    case "warning":     return { icon: AlertCircle,     color: "text-amber-600",   bg: "bg-amber-500/10" };
+    case "error":       return { icon: AlertCircle,     color: "text-destructive", bg: "bg-destructive/10" };
     case "info":
-    default:            return { icon: Info,            color: "text-primary",    bg: "bg-primary/10" };
+    default:            return { icon: Info,            color: "text-primary",     bg: "bg-primary/10" };
   }
 };
 
@@ -89,24 +82,24 @@ const Navbar = () => {
   };
 
   return (
-    <header className="sticky top-0 z-40 h-16 border-b bg-card/80 backdrop-blur-xl border-border">
+    <header className="sticky top-0 z-40 h-16 border-b bg-card/95 backdrop-blur-md border-border">
       <div className="flex items-center justify-between h-full px-4 lg:px-6">
 
         {/* Left: Hamburger + Logo */}
         <div className="flex items-center gap-4">
           <button
             onClick={toggleSidebar}
-            className="p-2 transition-colors rounded-lg hover:bg-muted lg:hidden"
+            className="p-2 transition-colors rounded-lg hover:bg-muted focus-visible:outline-2 focus-visible:outline-primary lg:hidden"
             aria-label="Toggle sidebar"
           >
             <Menu className="w-5 h-5 text-foreground" />
           </button>
 
-          <Link to="/" className="flex items-center gap-2">
-            <div className="flex items-center justify-center shadow-md w-9 h-9 rounded-xl gradient-primary">
-              <span className="text-lg font-bold text-primary-foreground">S</span>
+          <Link to="/" className="flex items-center gap-2.5 group">
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-primary-foreground font-semibold text-base transition-colors group-hover:bg-primary-dark">
+              <span>S</span>
             </div>
-            <span className="hidden text-xl font-bold sm:block font-heading gradient-text">
+            <span className="hidden text-lg font-semibold sm:block font-heading text-foreground tracking-tight">
               Skillfinix
             </span>
           </Link>
@@ -118,30 +111,30 @@ const Navbar = () => {
         </div>
 
         {/* Right: Create + Bell + Profile */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
 
           {/* ── CREATE DROPDOWN ── */}
           <div ref={createRef} className="relative">
             <button
               onClick={() => setShowCreateMenu(!showCreateMenu)}
-              className="flex items-center gap-2 px-4 py-2 transition-all rounded-lg bg-primary/10 hover:bg-primary/20 text-primary"
+              className="flex items-center gap-2 px-3 py-1.5 transition-colors rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary-dark active:translate-y-px focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-50"
               aria-label="Create"
             >
-              <Plus className="w-5 h-5" />
-              <span className="hidden text-sm font-medium sm:inline">Create</span>
+              <Plus className="w-4 h-4 stroke-[2.5]" />
+              <span className="hidden text-sm sm:inline">Create</span>
             </button>
 
             <AnimatePresence>
               {showCreateMenu && (
                 <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 6 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute right-0 z-50 w-56 py-2 mt-2 overflow-hidden border shadow-xl bg-popover rounded-xl border-border"
+                  className="absolute right-0 z-50 w-56 py-2 mt-2 overflow-hidden border shadow-lg bg-card rounded-xl border-border"
                 >
-                  <div className="px-3 py-2 border-b border-border">
-                    <p className="text-xs font-semibold uppercase text-muted-foreground">Create Content</p>
+                  <div className="px-3.5 py-1.5 border-b border-border">
+                    <p className="text-xs font-medium text-muted-foreground">Create content</p>
                   </div>
 
                   <Link
@@ -234,7 +227,7 @@ const Navbar = () => {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute right-0 z-50 mt-2 overflow-hidden border shadow-xl w-96 bg-card rounded-xl border-border"
+                  className="absolute right-0 z-50 mt-2 overflow-hidden border shadow-lg w-96 bg-card rounded-xl border-border"
                 >
                   {/* Header */}
                   <div className="flex items-center justify-between px-4 py-3 border-b border-border">
@@ -275,7 +268,7 @@ const Navbar = () => {
                     {notifications.length === 0 ? (
                       <div className="px-4 py-10 text-center text-muted-foreground">
                         <Bell className="w-10 h-10 mx-auto mb-3 opacity-20" />
-                        <p className="text-sm font-medium">You're all caught up!</p>
+                        <p className="text-sm font-medium">You’re all caught up!</p>
                         <p className="text-xs mt-1 opacity-70">No notifications yet</p>
                       </div>
                     ) : (
@@ -287,7 +280,7 @@ const Navbar = () => {
                             key={notif._id}
                             onClick={() => handleNotifClick(notif)}
                             className={cn(
-                              "w-full px-4 py-3 hover:bg-muted transition-colors text-left border-l-2 group",
+                              "w-full px-4 py-3 hover:bg-muted transition-colors text-left border-l-2 group focus-visible:outline-2 focus-visible:outline-primary",
                               !notif.read ? "bg-accent/20 border-primary" : "border-transparent"
                             )}
                           >
@@ -330,17 +323,17 @@ const Navbar = () => {
           <div ref={profileRef} className="relative">
             <button
               onClick={() => setShowProfileMenu(!showProfileMenu)}
-              className="flex items-center gap-2 p-1 transition-colors rounded-xl hover:bg-muted"
+              className="flex items-center gap-2 p-1 transition-colors rounded-lg hover:bg-muted focus-visible:outline-2 focus-visible:outline-primary"
             >
               <img
-                src={getAvatarUrl(user?.avatar, user?.name)}
+                src={resolveAvatarUrl(user?.avatar, user?.name)}
                 alt={user?.name || "User"}
-                className="object-cover w-8 h-8 rounded-lg"
-                onError={(e) => { e.target.onerror = null; e.target.src = getDefaultAvatar(user?.name); }}
+                className="object-cover w-8 h-8 rounded-md border border-border"
+                onError={(e) => { e.target.onerror = null; e.target.src = getHallmarkAvatar(user?.name); }}
               />
               <ChevronDown
                 className={cn(
-                  "h-4 w-4 text-muted-foreground transition-transform hidden sm:block",
+                  "h-4 w-4 text-muted-foreground transition-transform motion-reduce:transition-none hidden sm:block",
                   showProfileMenu && "rotate-180"
                 )}
               />
@@ -349,19 +342,19 @@ const Navbar = () => {
             <AnimatePresence>
               {showProfileMenu && (
                 <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 6 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute right-0 z-50 w-64 mt-2 overflow-hidden border shadow-xl bg-card rounded-xl border-border"
+                  className="absolute right-0 z-50 w-64 mt-2 overflow-hidden border shadow-lg bg-card rounded-xl border-border"
                 >
                   <div className="px-4 py-3 border-b border-border">
                     <div className="flex items-center gap-3">
                       <img
-                        src={getAvatarUrl(user?.avatar, user?.name)}
+                        src={resolveAvatarUrl(user?.avatar, user?.name)}
                         alt={user?.name || "User"}
-                        className="object-cover w-10 h-10 rounded-lg"
-                        onError={(e) => { e.target.onerror = null; e.target.src = getDefaultAvatar(user?.name); }}
+                        className="object-cover w-10 h-10 rounded-md border border-border"
+                        onError={(e) => { e.target.onerror = null; e.target.src = getHallmarkAvatar(user?.name); }}
                       />
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate text-foreground">{user?.name}</p>
